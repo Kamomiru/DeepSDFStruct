@@ -283,10 +283,12 @@ def append_parameter_magnitudes(param_mag_log, model):
 def train_deep_sdf(
     experiment_directory, data_source, continue_from=None, batch_split=1, device=None
 ):
+    #----Start Logging----
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S"
     )
     logging.debug("running " + experiment_directory)
+    #----Device Handling----
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -297,6 +299,7 @@ def train_deep_sdf(
     else:
         raise RuntimeError("Device must be either cpu or cuda")
 
+    #----Loading experiment specs----
     specs = ws.load_experiment_specifications(experiment_directory)
 
     logging.info("Experiment description: \n" + specs["Description"])
@@ -308,10 +311,12 @@ def train_deep_sdf(
     # else:
     #     reconstruction_split = None
 
+    #----more Logging----
     logging.debug(specs["NetworkSpecs"])
 
     latent_size = specs["CodeLength"]
 
+    #----creates checkpoints where model will be saved----
     checkpoints = list(
         range(
             specs["SnapshotFrequency"],
@@ -326,10 +331,12 @@ def train_deep_sdf(
 
     lr_schedules = get_learning_rate_schedules(specs)
 
-    grad_clip = get_spec_with_default(specs, "GradientClipNorm", None)
+    
+    grad_clip = get_spec_with_default(specs, "GradientClipNorm", None) #Gets info on what norm should be used for gradient clipping
     if grad_clip is not None:
         logging.debug("clipping gradients to max norm {}".format(grad_clip))
 
+    #----saving Model functions----
     def save_latest(epoch):
 
         save_model(experiment_directory, "latest.pth", decoder, epoch)
@@ -342,6 +349,7 @@ def train_deep_sdf(
         save_optimizer(experiment_directory, str(epoch) + ".pth", optimizer_all, epoch)
         save_latent_vectors(experiment_directory, str(epoch) + ".pth", lat_vecs, epoch)
 
+    #----other helpers----
     def signal_handler(sig, frame):
         logging.info("Stopping early...")
         sys.exit(0)
@@ -364,6 +372,7 @@ def train_deep_sdf(
 
     signal.signal(signal.SIGINT, signal_handler)
 
+    #----loading parameters----
     num_samp_per_scene = specs["SamplesPerScene"]
     scene_per_batch = specs["ScenesPerBatch"]
     clamp_dist = specs["ClampingDistance"]
@@ -371,22 +380,26 @@ def train_deep_sdf(
     maxT = clamp_dist
     enforce_minmax = True
 
+    #----code regularization parameters---- -> punish representations with large weights (also punishes large latent vecs?)
     do_code_regularization = get_spec_with_default(specs, "CodeRegularization", True)
     code_reg_lambda = get_spec_with_default(specs, "CodeRegularizationLambda", 1e-4)
 
     code_bound = get_spec_with_default(specs, "CodeBound", None)
 
+    #----multi Gpu handling----
     if torch.cuda.device_count() > 1:
         data_parallel = True
     else:
         data_parallel = False
 
+    #--------loading decoder--------
     decoder = ws.init_decoder(specs, device, data_parallel)
 
     geom_dimension = decoder.geom_dimension
     host_name = socket.gethostname()
     logging.info(f"training on {host_name} with {device_name}")
 
+    #----seeding----
     seed = get_spec_with_default(specs, "seed", 42)
     logging.info(f"Setting random seed to {seed}")
     random.seed(seed)
@@ -405,6 +418,7 @@ def train_deep_sdf(
     with open(train_split_file, "r") as f:
         train_split = json.load(f)
 
+    #----------------Data Loading----------------
     sdf_dataset = DeepSDFStruct.deep_sdf.data.SDFSamples(
         data_source,
         train_split,
@@ -413,7 +427,7 @@ def train_deep_sdf(
         geom_dimension=geom_dimension,
     )
 
-    num_data_loader_threads = get_spec_with_default(specs, "DataLoaderThreads", 1)
+    num_data_loader_threads = get_spec_with_default(specs, "DataLoaderThreads", 1) #a pytorch dataloader can use multiple threads to increase performance
     logging.debug("loading data with {} threads".format(num_data_loader_threads))
 
     sdf_loader = data_utils.DataLoader(
@@ -430,15 +444,19 @@ def train_deep_sdf(
 
     logging.info("There are {} scenes".format(num_scenes))
 
-    logging.debug(decoder)
+    logging.debug(decoder) #Logs String Representation of decoder
+
+    #----getting latent vector size----
     if isinstance(latent_size, list):
         latent_size_embedding = torch.tensor(latent_size).sum()
     else:
         latent_size_embedding = latent_size
+
+    #----create learnable latent vectors----
     lat_vecs = torch.nn.Embedding(
         num_scenes, latent_size_embedding, max_norm=code_bound, device=device
     )
-    torch.nn.init.normal_(
+    torch.nn.init.normal_( #initialize those learnable latent vectors
         lat_vecs.weight.data,
         0.0,
         get_spec_with_default(specs, "CodeInitStdDev", 1.0)
@@ -451,23 +469,20 @@ def train_deep_sdf(
         )
     )
 
+    #----------------Loss Functions----------------
     loss_l1 = torch.nn.L1Loss(reduction="sum")
     if do_code_regularization == "homogenization":
         loss_MSE = torch.nn.MSELoss(reduction="mean")
 
+    #----------------Optimizers----------------
     optimizer_all = torch.optim.Adam(
         [
-            {
-                "params": decoder.parameters(),
-                "lr": lr_schedules[0].get_learning_rate(0),
-            },
-            {
-                "params": lat_vecs.parameters(),
-                "lr": lr_schedules[1].get_learning_rate(0),
-            },
+            {"params": decoder.parameters(),"lr": lr_schedules[0].get_learning_rate(0),}, #pass model params and load initial lr
+            {"params": lat_vecs.parameters(),"lr": lr_schedules[1].get_learning_rate(0),},
         ]
     )
 
+    #----log lists----
     loss_log = []
     lr_log = []
     lat_mag_log = []
@@ -476,6 +491,7 @@ def train_deep_sdf(
 
     start_epoch = 1
 
+    #----handling training restart for already trained networks----
     if continue_from is not None:
 
         logging.info('continuing from "{}"'.format(continue_from))
@@ -518,90 +534,99 @@ def train_deep_sdf(
         )
     )
     start_train = time.time()
+
+    #--------------------------------TRAINING LOOP--------------------------------
+    #--------EPOCH LOOP--------
     for epoch in range(start_epoch, num_epochs + 1):
         epoch_error = 0.0
         start = time.time()
 
-        decoder.train()
+        decoder.train() #activate training mode (tracking gradients)
 
-        adjust_learning_rate(lr_schedules, optimizer_all, epoch)
+        adjust_learning_rate(lr_schedules, optimizer_all, epoch) #adjust lr according to Learning Rate schedule in specs.json
 
+        #--------BATCH LOOP--------
         for sdf_data, properties, indices in sdf_loader:
-            # Process the input data
-            sdf_data = sdf_data.reshape(-1, geom_dimension + 1).to(device)
+            #----process input data----
+            sdf_data = sdf_data.reshape(-1, geom_dimension + 1).to(device) #sdf data has multiple scenes -> we have to diminish the indices dimension to get N x (dim + 1) again
             properties = properties.to(device)
-            indices = indices.to(device)
+            indices = indices.to(device) #indices are the id for which geom. shape the data is from -> latent vector learning
 
             num_sdf_samples = sdf_data.shape[0]
 
             sdf_data.requires_grad = False
 
             xyz = sdf_data[:, 0:geom_dimension]
-            sdf_gt = sdf_data[:, geom_dimension].unsqueeze(1)
+            sdf_gt = sdf_data[:, geom_dimension].unsqueeze(1) #gt stands for ground truth
 
-            if enforce_minmax:
+            if enforce_minmax: #enforce whether sdf_gt should be clamped
                 sdf_gt = torch.clamp(sdf_gt, minT, maxT)
 
-            xyz = torch.chunk(xyz, batch_split)
+            #----split all data into mini batches----
+            xyz = torch.chunk(xyz, batch_split) #batch_split definies how many splits we should do. batch_split is set to 1 as default!
             indices = torch.chunk(
                 indices.unsqueeze(-1).repeat(1, num_samp_per_scene).view(-1),
                 batch_split,
             )
-
             sdf_gt = torch.chunk(sdf_gt, batch_split)
 
             batch_loss = 0.0
             batch_reg_loss = 0.0
             optimizer_all.zero_grad()
 
+            #--------MINI-BATCH/CHUNK LOOP--------
             for i in range(batch_split):
                 batch_lat_vecs = lat_vecs(indices[i])
 
-                input = torch.cat([batch_lat_vecs, xyz[i]], dim=1)
+                input = torch.cat([batch_lat_vecs, xyz[i]], dim=1) #combine latent vectors and xyz as input
 
-                # NN optimization
-                pred_sdf = decoder(input)
+                pred_sdf = decoder(input) #get decoder output/prediction
 
-                if enforce_minmax:
+                if enforce_minmax: #enforce whether sdf_gt should be clamped
                     pred_sdf = torch.clamp(pred_sdf, minT, maxT)
-
+                
+                #--------LOSS CALCULATION--------
                 chunk_loss = loss_l1(pred_sdf, sdf_gt[i].to(device)) / num_sdf_samples
 
-                if do_code_regularization == "homogenization":
+                if do_code_regularization == "homogenization": #should lead latent vectors to correspond to meaningful parameters of the shape (e.g. Radius) (default = True)
                     unique_lat_vecs = lat_vecs(indices[i].unique())
 
-                    pred_properties = decoder.module.regressor(
-                        unique_lat_vecs.to(device)
-                    )
+                    pred_properties = decoder.module.regressor(unique_lat_vecs.to(device)) #prediction of properties using small regressor network
+
                     reg_loss = code_reg_lambda * loss_MSE(
                         pred_properties, properties.to(device)
                     )
                     chunk_loss = chunk_loss + reg_loss.to(device)
                     batch_reg_loss = batch_reg_loss + reg_loss.to(device)
 
-                l2_size_loss = torch.sum(torch.norm(batch_lat_vecs, dim=1))
-                reg_loss = (
-                    code_reg_lambda * min(1, epoch / 100) * l2_size_loss
-                ) / num_sdf_samples
+                l2_size_loss = torch.sum(torch.norm(batch_lat_vecs, dim=1)) #penalize large latent vectors -> so NN does not get too reliant on the latent vectors
+                reg_loss = (code_reg_lambda * min(1, epoch / 100) * l2_size_loss) / num_sdf_samples #actual loss due to regularization -> gets bigger over time (epoch)
 
-                chunk_loss = chunk_loss + reg_loss.to(device)
-                batch_reg_loss = batch_reg_loss + reg_loss.to(device)
+                chunk_loss = chunk_loss + reg_loss.to(device) #total chunk loss
 
-                chunk_loss.backward()
+                #--------BACKPROPAGATION--------
+                chunk_loss.backward() #backprop
 
-                batch_loss += chunk_loss.item()
+                #--------LOSS LOGGING--------
+                batch_reg_loss = batch_reg_loss + reg_loss.to(device) #? why are we tracking our batches regularization loss independently?
+                batch_loss += chunk_loss.item() #track total batch loss
 
+            #--------MORE LOSS LOGGING--------
             logging.debug("loss = {}".format(batch_loss))
 
             loss_log.append(batch_loss)
-            grad_clip = 1.0
-            if grad_clip is not None:
-
-                torch.nn.utils.clip_grad_norm_(decoder.parameters(), grad_clip)
-
-            optimizer_all.step()
             epoch_error += batch_loss
 
+
+            grad_clip = 1.0
+            if grad_clip is not None: #Clip gradient
+
+                torch.nn.utils.clip_grad_norm_(decoder.parameters(), grad_clip) 
+
+            optimizer_all.step()
+            
+
+        #--------WHOLE LOT MORE LOGGING--------
         error = epoch_error / len(sdf_loader)
 
         end = time.time()
