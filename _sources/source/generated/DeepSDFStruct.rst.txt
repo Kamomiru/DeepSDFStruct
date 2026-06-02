@@ -1,0 +1,29 @@
+DeepSDFStruct
+=============
+
+.. automodule:: DeepSDFStruct
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   SDF
+   deep_sdf
+   design_of_experiments
+   flexicubes
+   flexisquares
+   lattice_structure
+   local_shapes
+   mesh
+   optimization
+   parametrization
+   pretrained_models
+   sampling
+   sdf_operations
+   sdf_primitives
+   splinepy_unitcells
+   torch_spline
+   utils
