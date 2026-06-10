@@ -453,8 +453,10 @@ def train_deep_sdf(
         latent_size_embedding = latent_size
 
     #----create learnable latent vectors----
+    #num_scenes = how many different latent vectors are we learning?
+    #latent_size_embedding = what dimension to those latent vectors have?
     lat_vecs = torch.nn.Embedding(
-        num_scenes, latent_size_embedding, max_norm=code_bound, device=device
+        num_scenes, latent_size_embedding, max_norm=code_bound, device=device 
     )
     torch.nn.init.normal_( #initialize those learnable latent vectors
         lat_vecs.weight.data,
