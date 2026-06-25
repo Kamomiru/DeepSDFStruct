@@ -559,10 +559,13 @@ def train_deep_sdf(
         adjust_learning_rate(lr_schedules, optimizer_all, epoch)
 
         for sdf_data, properties, indices in sdf_loader:
+            logger.info(f"sdf_data has shape {sdf_data.shape}")
+
             # Process the input data
             sdf_data = sdf_data.reshape(-1, geom_dimension + 1).to(device)
             properties = properties.to(device)
             indices = indices.to(device)
+            logger.info(f"indices is: {indices}")
 
             num_sdf_samples = sdf_data.shape[0]
 
@@ -580,6 +583,8 @@ def train_deep_sdf(
                 batch_split,
             )
 
+            logger.info(f"Now the coordinate matrix has shape {xyz[0].shape}")
+
             sdf_gt = torch.chunk(sdf_gt, batch_split)
 
             batch_loss = 0.0
@@ -593,6 +598,8 @@ def train_deep_sdf(
 
                 # NN optimization
                 pred_sdf = decoder(input)
+
+                logger.info(f"pred_sdf shape is {pred_sdf.shape}")
 
                 if enforce_minmax:
                     pred_sdf = torch.clamp(pred_sdf, minT, maxT)

@@ -6,8 +6,10 @@ standard_bounds = torch.tensor([[-1.0, 1.0],
                                 [-1.0, 1.0],
                                 [-1.0, 1.0]])
 
+standard_latent_vec = torch.tensor([[0.1]], dtype= torch.float32)
 
-def sample_rand(decoder, latent_vec, n, bounds = standard_bounds, eps = 1.0):
+
+def sample_rand(decoder, n: int, latent_vec = standard_latent_vec,  bounds = standard_bounds, eps = 1.0):
     """
     Samples random points across total SDF bounds
     Can be used for sampling close to the surface by adjusting eps, although this is highly inefficient and hence not advised
@@ -17,7 +19,7 @@ def sample_rand(decoder, latent_vec, n, bounds = standard_bounds, eps = 1.0):
     iter = 1
 
     samples = torch.tensor(())
-    latvec = torch.tensor([[0.1]])
+    latent_vec = torch.tensor([[0.1]])
 
     while samples.shape[0] < n:
         
@@ -27,13 +29,13 @@ def sample_rand(decoder, latent_vec, n, bounds = standard_bounds, eps = 1.0):
         
 
         #print("Network input:")
-        #print(torch.cat((latvec, xyz_rand), dim = 1))
+        #print(torch.cat((latent_vec, xyz_rand), dim = 1))
 
         #print("Sample SDF Value:")
-        sdf_value = decoder(torch.cat((latvec, xyz_rand), dim = 1))
+        sdf_value = decoder(torch.cat((latent_vec, xyz_rand), dim = 1))
         #print(sdf_value)
 
-        sample = torch.cat((latvec, xyz_rand, sdf_value), dim = 1)
+        sample = torch.cat((latent_vec, xyz_rand, sdf_value), dim = 1)
 
         if abs(sample[0, 4]) <= eps:
             samples = torch.cat((samples, sample), 0)
@@ -44,14 +46,13 @@ def sample_rand(decoder, latent_vec, n, bounds = standard_bounds, eps = 1.0):
     print(f"Sampling n = {n} points took {iter} iterations with eps = {eps}")
     return samples
 
-def sample_meshgrid(decoder, latent_vec, n, bounds = standard_bounds):
+def sample_meshgrid(decoder, n: int, latent_vec = standard_latent_vec, bounds = standard_bounds):
     """
     Creates Samples using an uniform grid of at least n samples.
     to get exactly n samples use only numbers n = 3^x where x are whole numbers. e.g. n = [81, 243, 729, 1000, 2187].
     otherwise the total sample number will be increased to create a uniform grid of at least n samples.
     """
     decoder.eval()
-    latent_vec = torch.tensor([[0.1]], dtype= torch.float32)
 
     n_dim = np.ceil(np.cbrt(n)).astype(int)
     n_total = n_dim**3
@@ -73,17 +74,13 @@ def sample_meshgrid(decoder, latent_vec, n, bounds = standard_bounds):
 
     return samples
 
-
-
-
-def sample_surface_newton(decoder, latent_vec, n, bounds = standard_bounds, eps = 0.01, maxiter = None):
+def sample_surface_newton(decoder, n: int, latent_vec = standard_latent_vec, bounds = standard_bounds, eps = 0.01, maxiter = None):
     """
     improved efficiency over sample_surface.
     Uses newton method to iterate towards surface
     """
     decoder.eval()
-    #implement arbitrary latvec value
-    latvec = torch.tensor([[0.1]])
+    #implement arbitrary latent_vec value
     samples = torch.tensor(())
     
     sample_n = 0
@@ -92,7 +89,7 @@ def sample_surface_newton(decoder, latent_vec, n, bounds = standard_bounds, eps 
         #implement sampling in arbitrary bounds
         xyz = 2 * torch.rand(1,3) - 1.0
         xyz.requires_grad_(True)
-        sdf_value = decoder(torch.cat((latvec, xyz), dim = 1))
+        sdf_value = decoder(torch.cat((latent_vec, xyz), dim = 1))
         #print(f"First iteration sdf_value: {sdf_value}")
 
         
@@ -103,7 +100,7 @@ def sample_surface_newton(decoder, latent_vec, n, bounds = standard_bounds, eps 
             grad = torch.autograd.grad(sdf_value.sum(), xyz, create_graph = False)[0] #returns tuple of multiple grad, since it supports multiple inputs -> [0] extracts the gradient value of our single input
 
             xyz = xyz - sdf_value * grad / (grad.norm(dim = -1, keepdim= True)**2 + 1e-8) #dim = -1 gives the norm of our last input. keepdim keeps the singular dimension so we get (N,1). +1e-8 to avoid 0 division
-            sdf_value = decoder(torch.cat((latvec, xyz), dim = 1))
+            sdf_value = decoder(torch.cat((latent_vec, xyz), dim = 1))
 
             #print(f"{iter}-th iteration sdf_value: {sdf_value}")
 
@@ -114,16 +111,13 @@ def sample_surface_newton(decoder, latent_vec, n, bounds = standard_bounds, eps 
         if ((xyz < lower_bounds) | (xyz > upper_bounds)).any():
             continue
 
-        sample = torch.cat((latvec, xyz, sdf_value), dim = 1)
+        sample = torch.cat((latent_vec, xyz, sdf_value), dim = 1)
         samples = torch.cat((samples, sample), dim = 0)
         sample_n += 1
 
     decoder.train()
     return samples
-        
- 
     
-        
 if __name__ == "__main__":
 
     from DeepSDFStruct.deep_sdf.workspace import load_trained_model
@@ -134,7 +128,7 @@ if __name__ == "__main__":
     device = torch.device("cpu")
     decoder = load_trained_model(path, "latest", device)
 
-    samples = sample_rand(decoder, 0.1, 4096)
+    samples = sample_meshgrid(decoder, 32768)
 
     print(samples)
 
