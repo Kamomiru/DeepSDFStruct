@@ -5,10 +5,10 @@ SDF Discriminator for GAN Training
 import torch.nn as nn
 import torch
 
-clamp_val = 1.8 #if SDFs are somewhat symetric around 0,0,0 the max SDF value should never be higher than sqrt(3) = 1.7321. Hence we choose a value slightly above that so all extreme and unrealistic values sill stand out
+sdf_clamp_val = 1.9 #if SDFs are somewhat symetric around 0,0,0 the max SDF value should never be higher than sqrt(3) = 1.7321. Hence we choose a value slightly above that so all extreme and unrealistic values sill stand out
 
 class ConvDiscriminator(nn.Module):
-    def __init__(self, dims, clampSDF):
+    def __init__(self, clampSDF):
         super(ConvDiscriminator, self).__init__()
         self.clampSDF = clampSDF
 
@@ -42,7 +42,7 @@ class ConvDiscriminator(nn.Module):
 
     def forward(self, x):
         if self.clampSDF == True: #clamping already implemented in training.py
-            x = torch.clamp(x, -clamp_val, clamp_val)
+            x = torch.clamp(x, -sdf_clamp_val, sdf_clamp_val)
         x = self.net(x)
         x = x.flatten(1) #Reduce (Batches, Feature Chanels = 256, 1, 1, 1) -> (Batches, Feature Chanels = 256, 1)
 

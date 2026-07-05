@@ -130,3 +130,22 @@ class DeepSDFDecoder(nn.Module):
                     x = F.dropout(x, p=self.dropout_prob, training=self.training)
 
         return x
+    
+    def forward_with_latent(self, latent_vec, xyz):
+        """
+        Forward pass that explicitly takes latent code + coordinates.
+
+        Args:
+            latent_vec: (N, L)
+            xyz:        (N, geom_dimension)
+
+        Returns:
+            SDF prediction: (N, 1)
+        """
+
+        if latent_vec.dim() == 1:
+            latent_vec = latent_vec.unsqueeze(0)
+
+        latent_vec = latent_vec.expand(xyz.shape[0], -1)
+        input = torch.cat([latent_vec, xyz], dim=1)
+        return self.forward(input)

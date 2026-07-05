@@ -618,6 +618,9 @@ class CrossMsSDF(SDFBase):
 
     def _get_domain_bounds(self) -> torch.Tensor:
         return torch.tensor([[-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]])
+    
+    def setRadius(self, radius):
+        self.r = radius
 
 
 class RoundedBoxSDF(SDFBase):

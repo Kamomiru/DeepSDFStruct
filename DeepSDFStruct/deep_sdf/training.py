@@ -548,6 +548,9 @@ def train_deep_sdf(
             lat_vecs.embedding_dim,
         )
     )
+    
+    logger.setLevel(logging.DEBUG)
+
     start_train = time.time()
     pbar = tqdm.trange(start_epoch, num_epochs + 1, desc="Training", smoothing=0)
     for epoch in pbar:
@@ -558,24 +561,30 @@ def train_deep_sdf(
 
         adjust_learning_rate(lr_schedules, optimizer_all, epoch)
 
+        counter = 1
         for sdf_data, properties, indices in sdf_loader:
-            logger.info(f"sdf_data has shape {sdf_data.shape}")
+            logger.debug(f"--------ITERATION {counter}--------")
+            logger.debug(f"indices is: {indices}")
+            counter += 1
 
             # Process the input data
             sdf_data = sdf_data.reshape(-1, geom_dimension + 1).to(device)
+            logger.debug(f"sdf_data has shape {sdf_data.shape} after reshape")
             properties = properties.to(device)
             indices = indices.to(device)
-            logger.info(f"indices is: {indices}")
-
+            
             num_sdf_samples = sdf_data.shape[0]
 
             sdf_data.requires_grad = False
 
             xyz = sdf_data[:, 0:geom_dimension]
             sdf_gt = sdf_data[:, geom_dimension].unsqueeze(1)
+            logger.debug(f"sdf_gt has shape {sdf_gt.shape}")
 
             if enforce_minmax:
                 sdf_gt = torch.clamp(sdf_gt, minT, maxT)
+            
+            logger.debug(sdf_gt)
 
             xyz = torch.chunk(xyz, batch_split)
             indices = torch.chunk(
@@ -583,7 +592,9 @@ def train_deep_sdf(
                 batch_split,
             )
 
-            logger.info(f"Now the coordinate matrix has shape {xyz[0].shape}")
+            logger.debug(f"indices is now: {indices}")
+
+            logger.debug(f"The coordinate matrix has shape {xyz[0].shape}")
 
             sdf_gt = torch.chunk(sdf_gt, batch_split)
 
@@ -599,21 +610,27 @@ def train_deep_sdf(
                 # NN optimization
                 pred_sdf = decoder(input)
 
-                logger.info(f"pred_sdf shape is {pred_sdf.shape}")
+                logger.debug(f"pred_sdf shape is {pred_sdf.shape}")
 
                 if enforce_minmax:
                     pred_sdf = torch.clamp(pred_sdf, minT, maxT)
 
+                #general loss
                 chunk_loss = loss_fun(pred_sdf, sdf_gt[i].to(device))
 
+                #regularization loss for lat vecs
                 l2_size_loss = torch.sum(torch.norm(batch_lat_vecs, dim=1))
+                #total reg. loss -> starts low but increases over epochs
                 reg_loss = (code_reg_lambda * min(1, epoch / 100) * l2_size_loss) / (
                     num_sdf_samples / batch_split
                 )
-
+                
+                #total loss
                 chunk_loss = chunk_loss + reg_loss.to(device)
+                #total reg loss for batch -> only used for logging, no backprop on this!
                 batch_reg_loss = batch_reg_loss + reg_loss.to(device)
 
+                #each chunks loss gets backpropagated intependently -> gradient accumulation
                 chunk_loss.backward()
 
                 batch_loss += chunk_loss.item()
