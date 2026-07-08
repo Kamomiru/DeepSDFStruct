@@ -86,11 +86,12 @@ def train_deep_sdf_gan(
     lr_log_D = []
     lr_log_G = []
     #lat_mag_log = []
-    timing_log = []
-    param_mag_log = {}
+    timing_log = [] #UNUSED
+    param_mag_log = {} #UNUSED
 
-    avg_real_score_D_log = []
-    avg_fake_score_D_log = []
+    avg_real_log = []
+    avg_fake_log = []
+    pred_accuracy_log = []
 
     decoder.train()
     discriminator.train()
@@ -100,17 +101,24 @@ def train_deep_sdf_gan(
     pbar = tqdm.trange(epoch, specs["NumEpochs"] + 1, desc="Training", smoothing=0)
     for epoch in pbar:
         start = time.time()
+
+        #--------Logging--------
         epoch_loss_D = 0.0
         epoch_loss_G = 0.0
 
         total_real_score_D = 0.0
         total_fake_score_D = 0.0
-        
+
+        correct_pred = 0.0
+
+        #IMPLEMENT ADJUSTABLE LEARNING RATE!!
+        lr_log_D.append(specs["InitialLearningRates"]["discriminator"])
+        lr_log_G.append(specs["InitialLearningRates"]["decoder"])
    
 
         
 
-        #IMPLEMENT ADJUSTABLE LEARNING RATE
+        
 
         for batch in range(batch_per_epoch):
             optimizer_disc.zero_grad()
@@ -134,32 +142,36 @@ def train_deep_sdf_gan(
             loss_G.backward()
             optimizer_dec.step()
 
-            #logging
+            #--------Logging--------
             epoch_loss_D += loss_D
             epoch_loss_G += loss_G
 
             total_real_score_D += real_scores.sum()
             total_fake_score_D += fake_scores_d.sum()
 
-        
-        
-
-        avg_real_score_D = total_real_score_D/samples_per_epoch
-        avg_fake_score_D = total_fake_score_D/samples_per_epoch
-        avg_real_score_D_log.append(avg_real_score_D)
-        avg_fake_score_D_log.append(avg_fake_score_D)
-
-        loss_log_D.append(epoch_loss_D.item())
-        loss_log_G.append(epoch_loss_G.item())
-
-
+            correct_pred += (real_scores > 0).float().sum().item() #Logit > 0 means real prediction. So this simply sums up all the correct Logit scores for real samples
+            correct_pred += (fake_scores_d < 0).float().sum().item() #vice versa.
 
         
+        
+        #--------Logging--------
+        avg_real_pred = total_real_score_D/samples_per_epoch
+        avg_fake_pred = total_fake_score_D/samples_per_epoch
+        avg_real_log.append(avg_real_pred.item())
+        avg_fake_log.append(avg_fake_pred.item())
 
-        logger.info(f"epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G}")
-        logger.info(f"avg Discriminator predictions: real = {avg_real_score_D} | fake = {avg_fake_score_D}")
+        loss_log_D.append(epoch_loss_D.item())# type: ignore
+        loss_log_G.append(epoch_loss_G.item())# type: ignore
 
-    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, epoch)
+        pred_accuracy = 100 * correct_pred / samples_per_epoch
+        pred_accuracy_log.append(pred_accuracy)
+
+        
+
+        logger.info(f"Epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G}")
+        logger.info(f"Avg. Discriminator predictions: real = {avg_real_pred} | fake = {avg_fake_pred} | Accuracy = {pred_accuracy}%" )
+
+    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, avg_real_log, avg_fake_log, pred_accuracy_log, epoch) # type: ignore
     ws.save_latest(epoch, experiment_directory, decoder, "latest.pth",None, GAN = GAN_architecture)
     plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture)
             

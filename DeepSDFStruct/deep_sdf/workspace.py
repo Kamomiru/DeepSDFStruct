@@ -426,6 +426,9 @@ def save_logs_GAN(
         loss_log_G,
         lr_log_D,
         lr_log_G,
+        avg_real_pred,
+        avg_fake_pred,
+        pred_accuracy,
         epoch
 ):
     
@@ -436,6 +439,9 @@ def save_logs_GAN(
             "loss_G": loss_log_G,
             "lr_log_D": lr_log_D,            
             "lr_log_G": lr_log_G,
+            "avg_real_pred": avg_real_pred,
+            "avg_fake_pred": avg_fake_pred,
+            "pred_accuracy": pred_accuracy,
         },
         os.path.join(experiment_directory, logs_filename)
     )
@@ -457,6 +463,9 @@ def load_logs(experiment_directory):
             data["loss_G"],
             data["lr_log_D"],
             data["lr_log_G"],
+            data["avg_real_pred"],
+            data["avg_fake_pred"],
+            data["pred_accuracy"],
             data["epoch"],
         )
 

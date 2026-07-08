@@ -127,7 +127,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
         elif show_plt:
             plt.show()
 
-    if GAN == True:
+    if GAN:
 
         num_iters = len(logs["loss_D"])
         iters_per_epoch = num_iters / logs["epoch"]
@@ -137,71 +137,125 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
         show_plt = False
 
-        if show_lr:
-            if ax is None:
-                fig, ax = plt.subplots(2, 1)
-                fig.tight_layout()
-                show_plt = True
-        else:
-            if ax is None:
-                fig, ax = plt.subplots()
-                show_plt = True
-            ax = [ax]
+        if ax is None:
+            fig, ax = plt.subplots(
+                2,
+                2,
+                figsize=(14, 8)
+            )
+            show_plt = True
 
-        # Plot losses
+        # Flatten for easier indexing
+        ax = ax.flatten()
+
+
+        # --------------------
+        # GAN Losses (top left)
+        # --------------------
         ax[0].plot(
             np.arange(num_iters) / iters_per_epoch,
             logs["loss_D"],
             "#e74c3c",
-            label="Discriminator Loss",
             alpha=0.3,
+            label="Discriminator Loss",
         )
 
         ax[0].plot(
-            np.arange(20, num_iters - 20) / iters_per_epoch,
+            np.arange(20, num_iters-20) / iters_per_epoch,
             smoothed_loss_D,
             "#c0392b",
-            label="Discriminator Loss (Running Mean)",
+            label="Discriminator Loss (Mean)",
         )
 
         ax[0].plot(
             np.arange(num_iters) / iters_per_epoch,
             logs["loss_G"],
             "#3498db",
-            label="Generator Loss",
             alpha=0.3,
+            label="Generator Loss",
         )
 
         ax[0].plot(
-            np.arange(20, num_iters - 20) / iters_per_epoch,
+            np.arange(20, num_iters-20) / iters_per_epoch,
             smoothed_loss_G,
             "#21618c",
-            label="Generator Loss (Running Mean)",
+            label="Generator Loss (Mean)",
         )
 
         ax[0].set_yscale("log")
-        ax[0].set(xlabel="Epoch", ylabel="Loss")
+        ax[0].set(
+            xlabel="Epoch",
+            ylabel="Loss",
+            title="GAN Losses"
+        )
         ax[0].legend()
 
-        if show_lr:
 
-            ax[1].plot(
-                np.arange(len(logs["lr_log_D"])),
-                logs["lr_log_D"],
-                label="Discriminator LR",
-            )
+        # --------------------
+        # Predictions (top right)
+        # --------------------
+        ax[1].plot(
+            logs["avg_real_pred"],
+            label="Real Prediction"
+        )
 
-            ax[1].plot(
-                np.arange(len(logs["lr_log_G"])),
-                logs["lr_log_G"],
-                label="Generator LR",
-            )
+        ax[1].plot(
+            logs["avg_fake_pred"],
+            label="Fake Prediction"
+        )
 
-            ax[1].set(xlabel="Iteration", ylabel="Learning Rate")
-            ax[1].legend()
+        ax[1].set(
+            xlabel="Epoch",
+            ylabel="Avg. Logit Score",
+            title="Discriminator Predictions"
+        )
+        ax[1].legend()
+
+
+        # --------------------
+        # Learning Rates (bottom left)
+        # --------------------
+        ax[2].plot(
+            logs["lr_log_D"],
+            label="Discriminator LR"
+        )
+
+        ax[2].plot(
+            logs["lr_log_G"],
+            label="Generator LR"
+        )
+
+        ax[2].set(
+            xlabel="Epoch",
+            ylabel="Learning Rate",
+            title="Learning Rates"
+        )
+        ax[2].legend()
+
+
+        # --------------------
+        # Accuracy (bottom right)
+        # --------------------
+        ax[3].plot(
+            logs["pred_accuracy"],
+            label="Accuracy"
+        )
+
+        ax[3].set(
+            xlabel="Epoch",
+            ylabel="Accuracy (%)",
+            title="Discriminator Accuracy"
+        )
+
+        ax[3].set_ylim(-2, 102)
+        ax[3].legend()
+
 
         for axis in ax:
             axis.grid()
+
+
+        plt.tight_layout()
 
         if filename is not None:
             plt.savefig(filename, bbox_inches="tight")
@@ -238,3 +292,8 @@ def plot_reconstruction_loss(loss_history, iters_per_epoch, filename=None):
     ax.legend(["Loss", "Loss (Running Mean 41)"])
     ax.grid()
     plt.savefig(filename, bbox_inches="tight")
+
+def to_numpy(x):
+    if torch.is_tensor(x):
+        return x.detach().cpu().numpy()
+    return np.asarray(x)
