@@ -37,12 +37,10 @@ def train_deep_sdf_gan(
     
     #load experiment specs
     specs = ws.load_experiment_specifications(experiment_directory)
+    disc_specs = specs["DiscriminatorSpecs"]
     logger.info(f"Reading experiment configuration from {experiment_directory}")
     logger.info("Experiment description: \n" + specs["Description"])
     GAN_architecture = specs["GANArchitecture"]
-
-    if specs["n_nodes"] != 32:
-        raise RuntimeError(f"n_nodes must be set to 32 since the discriminator is not yet implemented to handle arbitrary node numbers!\nn_nodes is set to {specs["n_nodes"]}")
 
     logger.debug(specs["NetworkSpecs"])
 
@@ -59,7 +57,7 @@ def train_deep_sdf_gan(
     #initialize decoder
     decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
-    discriminator = ConvDiscriminator(clampSDF = True).to(device)
+    discriminator = ConvDiscriminator(True, disc_specs["n_nodes"]).to(device)
 
     #initialize optimizers
     optimizer_dec = torch.optim.Adam(decoder.parameters(),
@@ -78,7 +76,7 @@ def train_deep_sdf_gan(
 
     #Data Generation/Sampling
     real_sdf = real_sdf = CrossMsSDF(0.0)
-    sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device)
+    sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device)
 
     #Training stat logging
     loss_log_D = []
