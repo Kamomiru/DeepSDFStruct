@@ -156,38 +156,6 @@ def get_learning_rate_schedules(specs):
     return schedules
 
 
-def save_model(experiment_directory, filename, decoder, epoch):
-
-    model_params_dir = ws.get_model_params_dir(experiment_directory, True)
-
-    torch.save(
-        {"epoch": epoch, "model_state_dict": decoder.state_dict()},
-        os.path.join(model_params_dir, filename),
-    )
-
-
-def save_optimizer(experiment_directory, filename, optimizer, epoch):
-
-    optimizer_params_dir = ws.get_optimizer_params_dir(experiment_directory, True)
-
-    torch.save(
-        {"epoch": epoch, "optimizer_state_dict": optimizer.state_dict()},
-        os.path.join(optimizer_params_dir, filename),
-    )
-
-
-def save_latent_vectors(experiment_directory, filename, latent_vec, epoch):
-
-    latent_codes_dir = ws.get_latent_codes_dir(experiment_directory, True)
-
-    all_latents = latent_vec.state_dict()
-
-    torch.save(
-        {"epoch": epoch, "latent_codes": all_latents},
-        os.path.join(latent_codes_dir, filename),
-    )
-
-
 def save_latent_code_data_map(experiment_directory, data_source, npz_filenames):
     """Save mapping between latent indices and source training `.npz` files.
 
@@ -219,47 +187,6 @@ def save_latent_code_data_map(experiment_directory, data_source, npz_filenames):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(latent_code_data_map, f, indent=4)
 
-
-def save_logs(
-    experiment_directory,
-    loss_log,
-    lr_log,
-    timing_log,
-    lat_mag_log,
-    param_mag_log,
-    epoch,
-):
-
-    torch.save(
-        {
-            "epoch": epoch,
-            "loss": loss_log,
-            "learning_rate": lr_log,
-            "timing": timing_log,
-            "latent_magnitude": lat_mag_log,
-            "param_magnitude": param_mag_log,
-        },
-        os.path.join(experiment_directory, ws.logs_filename),
-    )
-
-
-def load_logs(experiment_directory):
-
-    full_filename = os.path.join(experiment_directory, ws.logs_filename)
-
-    if not os.path.isfile(full_filename):
-        raise Exception('log file "{}" does not exist'.format(full_filename))
-
-    data = torch.load(full_filename)
-
-    return (
-        data["loss"],
-        data["learning_rate"],
-        data["timing"],
-        data["latent_magnitude"],
-        data["param_magnitude"],
-        data["epoch"],
-    )
 
 
 def clip_logs(loss_log, lr_log, timing_log, lat_mag_log, param_mag_log, epoch):
@@ -342,18 +269,12 @@ def train_deep_sdf(
     if grad_clip is not None:
         logger.debug("clipping gradients to max norm {}".format(grad_clip))
 
-    def save_latest(epoch):
-
-        save_model(experiment_directory, "latest.pth", decoder, epoch)
-        save_optimizer(experiment_directory, "latest.pth", optimizer_all, epoch)
-        save_latent_vectors(experiment_directory, "latest.pth", lat_vecs, epoch)
-
     def save_checkpoints(epoch):
 
-        save_model(experiment_directory, str(epoch) + ".pth", decoder, epoch)
-        save_optimizer(experiment_directory, str(epoch) + ".pth", optimizer_all, epoch)
-        save_latent_vectors(experiment_directory, str(epoch) + ".pth", lat_vecs, epoch)
-        save_logs(
+        ws.save_model(experiment_directory, str(epoch) + ".pth", decoder, epoch)
+        ws.save_optimizer(experiment_directory, str(epoch) + ".pth", optimizer_all, epoch)
+        ws.save_latent_vectors(experiment_directory, str(epoch) + ".pth", lat_vecs, epoch)
+        ws.save_logs(
             experiment_directory,
             loss_log,
             lr_log,
@@ -521,7 +442,7 @@ def train_deep_sdf(
             experiment_directory, continue_from, optimizer_all, device=device
         )
 
-        loss_log, lr_log, timing_log, lat_mag_log, param_mag_log, log_epoch = load_logs(
+        loss_log, lr_log, timing_log, lat_mag_log, param_mag_log, log_epoch = ws.load_logs(
             experiment_directory
         )
 
@@ -548,8 +469,6 @@ def train_deep_sdf(
             lat_vecs.embedding_dim,
         )
     )
-    
-    logger.setLevel(logging.DEBUG)
 
     start_train = time.time()
     pbar = tqdm.trange(start_epoch, num_epochs + 1, desc="Training", smoothing=0)
@@ -561,15 +480,10 @@ def train_deep_sdf(
 
         adjust_learning_rate(lr_schedules, optimizer_all, epoch)
 
-        counter = 1
         for sdf_data, properties, indices in sdf_loader:
-            logger.debug(f"--------ITERATION {counter}--------")
-            logger.debug(f"indices is: {indices}")
-            counter += 1
 
             # Process the input data
             sdf_data = sdf_data.reshape(-1, geom_dimension + 1).to(device)
-            logger.debug(f"sdf_data has shape {sdf_data.shape} after reshape")
             properties = properties.to(device)
             indices = indices.to(device)
             
@@ -579,22 +493,15 @@ def train_deep_sdf(
 
             xyz = sdf_data[:, 0:geom_dimension]
             sdf_gt = sdf_data[:, geom_dimension].unsqueeze(1)
-            logger.debug(f"sdf_gt has shape {sdf_gt.shape}")
 
             if enforce_minmax:
                 sdf_gt = torch.clamp(sdf_gt, minT, maxT)
-            
-            logger.debug(sdf_gt)
 
             xyz = torch.chunk(xyz, batch_split)
             indices = torch.chunk(
                 indices.unsqueeze(-1).repeat(1, num_samp_per_scene).view(-1),
                 batch_split,
             )
-
-            logger.debug(f"indices is now: {indices}")
-
-            logger.debug(f"The coordinate matrix has shape {xyz[0].shape}")
 
             sdf_gt = torch.chunk(sdf_gt, batch_split)
 
@@ -609,8 +516,6 @@ def train_deep_sdf(
 
                 # NN optimization
                 pred_sdf = decoder(input)
-
-                logger.debug(f"pred_sdf shape is {pred_sdf.shape}")
 
                 if enforce_minmax:
                     pred_sdf = torch.clamp(pred_sdf, minT, maxT)
@@ -677,8 +582,8 @@ def train_deep_sdf(
             save_checkpoints(epoch)
 
         if epoch % log_frequency == 0:
-            save_latest(epoch)
-            save_logs(
+            ws.save_latest(epoch,experiment_directory, decoder, optimizer_all, lat_vecs)
+            ws.save_logs(
                 experiment_directory,
                 loss_log,
                 lr_log,

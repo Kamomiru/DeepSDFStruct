@@ -56,63 +56,160 @@ def extract_paths(data, current_path=""):
 
 
 def running_mean(x, N):
+
+    if isinstance(x, list):
+        x = [
+            item.detach().cpu().item() if torch.is_tensor(item) else item
+            for item in x
+        ]
+
+    elif torch.is_tensor(x):
+        x = x.detach().cpu().numpy()
+
+    x = np.asarray(x)
+
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
-
-def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None):
+def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN = False):
 
     logs = torch.load(os.path.join(experiment_directory, ws.logs_filename))
 
-    num_iters = len(logs["loss"])
-    iters_per_epoch = num_iters / logs["epoch"]
+    if GAN == False:
 
-    smoothed_loss_41 = running_mean(logs["loss"], 41)
+        num_iters = len(logs["loss"])
+        iters_per_epoch = num_iters / logs["epoch"]
 
-    show_plt = False
+        smoothed_loss_41 = running_mean(logs["loss"], 41)
 
-    if show_lr:
-        if ax is None:
-            fig, ax = plt.subplots(2, 1)
-            fig.tight_layout()
-            show_plt = True
-    else:
-        if ax is None:
-            fig, ax = plt.subplots()
-            show_plt = True
-        ax = [ax]
+        show_plt = False
 
-    ax[0].plot(
-        np.arange(num_iters) / iters_per_epoch,
-        logs["loss"],
-        "#82c6eb",
-        np.arange(20, num_iters - 20) / iters_per_epoch,
-        smoothed_loss_41,
-        "#2a9edd",
-    )
-    ax[0].set_yscale("log")
+        if show_lr:
+            if ax is None:
+                fig, ax = plt.subplots(2, 1)
+                fig.tight_layout()
+                show_plt = True
+        else:
+            if ax is None:
+                fig, ax = plt.subplots()
+                show_plt = True
+            ax = [ax]
 
-    ax[0].set(xlabel="Epoch", ylabel="Loss")
-    ax[0].legend(["Loss", "Loss (Running Mean)", "Loss (Running Mean 41)"])
-
-    if show_lr:
-        combined_lrs = np.array(logs["learning_rate"])
-        ax[1].plot(
-            np.arange(combined_lrs.shape[0]),
-            combined_lrs[:, 0],
-            np.arange(combined_lrs.shape[0]),
-            combined_lrs[:, 1],
+        ax[0].plot(
+            np.arange(num_iters) / iters_per_epoch,
+            logs["loss"],
+            "#82c6eb",
+            np.arange(20, num_iters - 20) / iters_per_epoch,
+            smoothed_loss_41,
+            "#2a9edd",
         )
-        ax[1].set(xlabel="Epoch", ylabel="Learning Rate")
-        ax[1].legend(["Decoder", "Latent Vector"])
+        ax[0].set_yscale("log")
 
-    for axis in ax:
-        axis.grid()
-    if filename is not None:
-        plt.savefig(filename, bbox_inches="tight")
-        plt.close()
-    elif show_plt:
-        plt.show()
+        ax[0].set(xlabel="Epoch", ylabel="Loss")
+        ax[0].legend(["Loss", "Loss (Running Mean)", "Loss (Running Mean 41)"])
+
+        if show_lr:
+            combined_lrs = np.array(logs["learning_rate"])
+            ax[1].plot(
+                np.arange(combined_lrs.shape[0]),
+                combined_lrs[:, 0],
+                np.arange(combined_lrs.shape[0]),
+                combined_lrs[:, 1],
+            )
+            ax[1].set(xlabel="Epoch", ylabel="Learning Rate")
+            ax[1].legend(["Decoder", "Latent Vector"])
+
+        for axis in ax:
+            axis.grid()
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight")
+            plt.close()
+        elif show_plt:
+            plt.show()
+
+    if GAN == True:
+
+        num_iters = len(logs["loss_D"])
+        iters_per_epoch = num_iters / logs["epoch"]
+
+        smoothed_loss_D = running_mean(logs["loss_D"], 41)
+        smoothed_loss_G = running_mean(logs["loss_G"], 41)
+
+        show_plt = False
+
+        if show_lr:
+            if ax is None:
+                fig, ax = plt.subplots(2, 1)
+                fig.tight_layout()
+                show_plt = True
+        else:
+            if ax is None:
+                fig, ax = plt.subplots()
+                show_plt = True
+            ax = [ax]
+
+        # Plot losses
+        ax[0].plot(
+            np.arange(num_iters) / iters_per_epoch,
+            logs["loss_D"],
+            "#e74c3c",
+            label="Discriminator Loss",
+            alpha=0.3,
+        )
+
+        ax[0].plot(
+            np.arange(20, num_iters - 20) / iters_per_epoch,
+            smoothed_loss_D,
+            "#c0392b",
+            label="Discriminator Loss (Running Mean)",
+        )
+
+        ax[0].plot(
+            np.arange(num_iters) / iters_per_epoch,
+            logs["loss_G"],
+            "#3498db",
+            label="Generator Loss",
+            alpha=0.3,
+        )
+
+        ax[0].plot(
+            np.arange(20, num_iters - 20) / iters_per_epoch,
+            smoothed_loss_G,
+            "#21618c",
+            label="Generator Loss (Running Mean)",
+        )
+
+        ax[0].set_yscale("log")
+        ax[0].set(xlabel="Epoch", ylabel="Loss")
+        ax[0].legend()
+
+        if show_lr:
+
+            ax[1].plot(
+                np.arange(len(logs["lr_log_D"])),
+                logs["lr_log_D"],
+                label="Discriminator LR",
+            )
+
+            ax[1].plot(
+                np.arange(len(logs["lr_log_G"])),
+                logs["lr_log_G"],
+                label="Generator LR",
+            )
+
+            ax[1].set(xlabel="Iteration", ylabel="Learning Rate")
+            ax[1].legend()
+
+        for axis in ax:
+            axis.grid()
+
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight")
+            plt.close()
+        elif show_plt:
+            plt.show()
+
+
 
 
 def plot_reconstruction_loss(loss_history, iters_per_epoch, filename=None):

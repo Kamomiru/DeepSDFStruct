@@ -11,6 +11,7 @@ class ConvDiscriminator(nn.Module):
     def __init__(self, clampSDF):
         super(ConvDiscriminator, self).__init__()
         self.clampSDF = clampSDF
+        self.HingeGAN = True #to be implemented if standard non-saturating GAN Loss should be used -> sigmoid function is needed.
 
 
         #how will the current latvec be taken into account here? 2 input chanels in conv3d?
@@ -39,6 +40,7 @@ class ConvDiscriminator(nn.Module):
         )
 
         self.lin = nn.Linear(256, 1)
+        self.sigm = nn.Sigmoid()
 
     def forward(self, x):
         if self.clampSDF == True: #clamping already implemented in training.py
@@ -47,6 +49,10 @@ class ConvDiscriminator(nn.Module):
         x = x.flatten(1) #Reduce (Batches, Feature Chanels = 256, 1, 1, 1) -> (Batches, Feature Chanels = 256, 1)
 
         #implement latent vector injection at Discriminator?
-        return self.lin(x)
+        x = self.lin(x)
+
+        if self.HingeGAN == False:
+            x = self.sigm(x)
+        return x
         
 

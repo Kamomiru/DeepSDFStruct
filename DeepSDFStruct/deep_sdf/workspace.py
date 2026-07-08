@@ -359,3 +359,115 @@ class ExperimentSummary(TypedDict):
 def save_experiment_summary(experiment_directory: str, summary: ExperimentSummary):
     with open(os.path.join(experiment_directory, experiment_summary_name), "w") as f:
         json.dump(summary, f, indent=4)
+
+def save_model(experiment_directory, filename, decoder, epoch):
+
+    model_params_dir = get_model_params_dir(experiment_directory, True)
+
+    torch.save(
+        {"epoch": epoch, "model_state_dict": decoder.state_dict()},
+        os.path.join(model_params_dir, filename),
+    )
+
+def save_optimizer(experiment_directory, filename, optimizer, epoch):
+
+    optimizer_params_dir = get_optimizer_params_dir(experiment_directory, True)
+
+    torch.save(
+        {"epoch": epoch, "optimizer_state_dict": optimizer.state_dict()},
+        os.path.join(optimizer_params_dir, filename),
+    )
+
+def save_latent_vectors(experiment_directory, filename, latent_vec, epoch):
+
+    latent_codes_dir = get_latent_codes_dir(experiment_directory, True)
+
+    all_latents = latent_vec.state_dict()
+
+    torch.save(
+        {"epoch": epoch, "latent_codes": all_latents},
+        os.path.join(latent_codes_dir, filename),
+    )
+
+def save_latest(epoch, experiment_directory, decoder, optimizer_all, lat_vecs, GAN = False):
+
+    if GAN == False:
+        save_model(experiment_directory, "latest.pth", decoder, epoch)
+        save_optimizer(experiment_directory, "latest.pth", optimizer_all, epoch)
+        save_latent_vectors(experiment_directory, "latest.pth", lat_vecs, epoch)
+    if GAN == True:
+        save_model(experiment_directory, "latest.pth", decoder, epoch)
+
+def save_logs(
+    experiment_directory,
+    loss_log,
+    lr_log,
+    timing_log,
+    lat_mag_log,
+    param_mag_log,
+    epoch
+):
+
+    torch.save(
+        {
+            "epoch": epoch,
+            "loss": loss_log,
+            "learning_rate": lr_log,
+            "timing": timing_log,
+            "latent_magnitude": lat_mag_log,
+            "param_magnitude": param_mag_log,
+        },
+        os.path.join(experiment_directory, logs_filename),
+    )
+
+def save_logs_GAN(
+        experiment_directory,
+        loss_log_D,
+        loss_log_G,
+        lr_log_D,
+        lr_log_G,
+        epoch
+):
+    
+    torch.save(
+        {
+            "epoch": epoch,
+            "loss_D": loss_log_D,
+            "loss_G": loss_log_G,
+            "lr_log_D": lr_log_D,            
+            "lr_log_G": lr_log_G,
+        },
+        os.path.join(experiment_directory, logs_filename)
+    )
+
+
+def load_logs(experiment_directory):
+
+    full_filename = os.path.join(experiment_directory, logs_filename)
+
+    if not os.path.isfile(full_filename):
+        raise Exception(f'log file "{full_filename}" does not exist')
+
+    data = torch.load(full_filename)
+
+    #GAN Logs
+    if "loss_D" in data:
+        return (
+            data["loss_D"],
+            data["loss_G"],
+            data["lr_log_D"],
+            data["lr_log_G"],
+            data["epoch"],
+        )
+
+    # Standard logs
+    return (
+        data["loss"],
+        data["learning_rate"],
+        data["timing"],
+        data["latent_magnitude"],
+        data["param_magnitude"],
+        data["epoch"],
+    )
+
+
