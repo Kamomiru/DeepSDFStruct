@@ -9,10 +9,11 @@ import math
 sdf_clamp_val = 1.9 #if SDFs are somewhat symetric around 0,0,0 the max SDF value should never be higher than sqrt(3) = 1.7321. Hence we choose a value slightly above that so all extreme and unrealistic values sill stand out
 
 class ConvDiscriminator(nn.Module):
-    def __init__(self, n_nodes):
+    def __init__(self, n_nodes, spectral_reg):
         super(ConvDiscriminator, self).__init__()
         self.HingeGAN = True #to be implemented if standard non-saturating GAN Loss should be used -> sigmoid function is needed.
-        
+        self.spectral_reg = spectral_reg
+
         if n_nodes not in [4, 8, 16, 32, 64]:
             raise RuntimeError("n_nodes must be 4, 8, 16, 32 or 64!")
         self.n_nodes = n_nodes
@@ -27,7 +28,13 @@ class ConvDiscriminator(nn.Module):
         padding = 1
 
         for layer in range(1, self.layers + 1):
-            layers.append(nn.Conv3d(in_chanels, out_channels, kernel_size, stride, padding))
+
+            if spectral_reg:
+                layers.append(nn.utils.spectral_norm(
+                    nn.Conv3d(in_chanels, out_channels, kernel_size, stride, padding)))
+                
+            else:
+                layers.append(nn.Conv3d(in_chanels, out_channels, kernel_size, stride, padding))
 
 
             if layer != 1:
