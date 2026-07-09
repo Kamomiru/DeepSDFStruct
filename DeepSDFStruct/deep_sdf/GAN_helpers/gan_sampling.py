@@ -13,7 +13,7 @@ class ConvGAN_SDF_Sampler():
         
         self._update_random_params()
 
-    def fetch_samples(self, fake_only = False):
+    def fetch_samples(self, fake_only = False, decoder_clamp_val = None):
 
         real_samples = []
         fake_samples = []
@@ -44,6 +44,10 @@ class ConvGAN_SDF_Sampler():
 
         if fake_only:
             return fake_samples
+        
+        if decoder_clamp_val != None:
+            fake_samples = torch.clamp(fake_samples, min = -decoder_clamp_val, max=decoder_clamp_val)
+
         
         real_samples = torch.stack(real_samples, dim=0)
         

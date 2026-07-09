@@ -57,20 +57,21 @@ def train_deep_sdf_gan(
     #initialize decoder
     decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
-    discriminator = ConvDiscriminator(True, disc_specs["n_nodes"]).to(device)
+    discriminator = ConvDiscriminator(disc_specs["n_nodes"]).to(device)
 
     #initialize optimizers
     optimizer_dec = torch.optim.Adam(decoder.parameters(),
                                       lr = specs["InitialLearningRates"]["decoder"])
     optimizer_disc = torch.optim.Adam(discriminator.parameters(),
                                       lr = specs["InitialLearningRates"]["discriminator"])
-
+    
     #Batch size Variables and checking
     samples_per_batch = specs["SamplesPerBatch"]
     batch_per_epoch = specs["BatchPerEpoch"]
-    samples_per_epoch = samples_per_batch * batch_per_epoch
+    samples_per_epoch_D = samples_per_batch * batch_per_epoch
+    samples_per_epoch_G = specs["LearnRatio"] * samples_per_epoch_D
 
-    if samples_per_epoch % 2 != 0:
+    if samples_per_epoch_D % 2 != 0:
             raise RuntimeError("samples_per_batch * batch_per_epoch must be divisible by 2 to ensure equal amounts of real and fake inputs for discriminator!")
     num_real_samples = batch_per_epoch*samples_per_batch // 2
 
@@ -116,52 +117,57 @@ def train_deep_sdf_gan(
 
         
 
-        
-
         for batch in range(batch_per_epoch):
-            optimizer_disc.zero_grad()
-            optimizer_dec.zero_grad()
-
             real_batch, fake_batch = sampler.fetch_samples()
 
             #Train Discriminator
             real_scores = discriminator(real_batch)
             fake_scores_d = discriminator(fake_batch.detach()) #We need to detach the fake_batch so all our fake samples are treated as constant and our G gradients dont flow into our D gradient
 
+            optimizer_disc.zero_grad()
+
             loss_D = Hinge_Loss_D(real_scores, fake_scores_d)
             loss_D.backward()
+
             optimizer_disc.step()
+            
+            epoch_loss_D += loss_D
 
             #Train Generator
-            fake_batch = sampler.fetch_samples(fake_only = True)
-            fake_scores = discriminator(fake_batch) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
+            #Eventually turn off gradient calculation for discriminator here since they are not used -> eventual performance increase
+            for i in range(specs["LearnRatio"]):
+                fake_batch = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                fake_scores = discriminator(fake_batch) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
 
-            loss_G = Hinge_Loss_G(fake_scores)
-            loss_G.backward()
-            optimizer_dec.step()
+                optimizer_dec.zero_grad()
+
+                loss_G = Hinge_Loss_G(fake_scores)
+                loss_G.backward()
+
+                optimizer_dec.step()
+
+                epoch_loss_G += loss_G
 
             #--------Logging--------
-            epoch_loss_D += loss_D
-            epoch_loss_G += loss_G
-
-            total_real_score_D += real_scores.sum()
-            total_fake_score_D += fake_scores_d.sum()
+            total_real_score_D += real_scores.sum().item()
+            total_fake_score_D += fake_scores_d.sum().item()
 
             correct_pred += (real_scores > 0).float().sum().item() #Logit > 0 means real prediction. So this simply sums up all the correct Logit scores for real samples
             correct_pred += (fake_scores_d < 0).float().sum().item() #vice versa.
 
-        
+        if specs["LearnRatio"] > 1:
+            epoch_loss_G /= specs["LearnRatio"]
         
         #--------Logging--------
-        avg_real_pred = total_real_score_D/samples_per_epoch
-        avg_fake_pred = total_fake_score_D/samples_per_epoch
-        avg_real_log.append(avg_real_pred.item())
-        avg_fake_log.append(avg_fake_pred.item())
+        avg_real_pred = total_real_score_D/samples_per_epoch_D
+        avg_fake_pred = total_fake_score_D/samples_per_epoch_D
+        avg_real_log.append(avg_real_pred)
+        avg_fake_log.append(avg_fake_pred)
 
         loss_log_D.append(epoch_loss_D.item())# type: ignore
         loss_log_G.append(epoch_loss_G.item())# type: ignore
 
-        pred_accuracy = 100 * correct_pred / samples_per_epoch
+        pred_accuracy = 100 * correct_pred / samples_per_epoch_D
         pred_accuracy_log.append(pred_accuracy)
 
         

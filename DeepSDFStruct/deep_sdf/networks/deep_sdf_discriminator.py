@@ -9,9 +9,8 @@ import math
 sdf_clamp_val = 1.9 #if SDFs are somewhat symetric around 0,0,0 the max SDF value should never be higher than sqrt(3) = 1.7321. Hence we choose a value slightly above that so all extreme and unrealistic values sill stand out
 
 class ConvDiscriminator(nn.Module):
-    def __init__(self, clampSDF, n_nodes):
+    def __init__(self, n_nodes):
         super(ConvDiscriminator, self).__init__()
-        self.clampSDF = clampSDF
         self.HingeGAN = True #to be implemented if standard non-saturating GAN Loss should be used -> sigmoid function is needed.
         
         if n_nodes not in [4, 8, 16, 32, 64]:
@@ -46,12 +45,7 @@ class ConvDiscriminator(nn.Module):
         self.lin = nn.Linear(in_chanels, 1)
         self.sigm = nn.Sigmoid()
 
-        print(self.net)
-        print(self.layers)
-
     def forward(self, x):
-        if self.clampSDF == True: #clamping already implemented in training.py
-            x = torch.clamp(x, -sdf_clamp_val, sdf_clamp_val)
         x = self.net(x)
         x = x.flatten(1) #Reduce (Batches, Feature Chanels = 256, 1, 1, 1) -> (Batches, Feature Chanels = 256, 1)
 
