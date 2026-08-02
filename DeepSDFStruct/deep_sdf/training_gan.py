@@ -42,6 +42,11 @@ def train_deep_sdf_gan(
     logger.info("Experiment description: \n" + specs["Description"])
     GAN_architecture = specs["GANArchitecture"]
 
+    #Determine decoder snapshot epochs
+    snapshot_epochs = list(range(specs["SnapshotFrequency"],specs["NumEpochs"] + 1,specs["SnapshotFrequency"]))
+    snapshot_epochs += specs["AdditionalSnapshots"]
+    snapshot_epochs.sort()
+
     logger.debug(specs["NetworkSpecs"])
 
     if device == "cuda":
@@ -57,7 +62,7 @@ def train_deep_sdf_gan(
     #initialize decoder
     decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
-    discriminator = ConvDiscriminator(disc_specs["n_nodes"]).to(device)
+    discriminator = ConvDiscriminator(disc_specs["n_nodes"], disc_specs["spectral_reg"], specs["CodeLength"]).to(device)
 
     #initialize optimizers
     optimizer_dec = torch.optim.Adam(decoder.parameters(),
@@ -118,11 +123,11 @@ def train_deep_sdf_gan(
         
 
         for batch in range(batch_per_epoch):
-            real_batch, fake_batch = sampler.fetch_samples()
+            real_batch, fake_batch, latent_vectors = sampler.fetch_samples()
 
             #Train Discriminator
-            real_scores = discriminator(real_batch)
-            fake_scores_d = discriminator(fake_batch.detach()) #We need to detach the fake_batch so all our fake samples are treated as constant and our G gradients dont flow into our D gradient
+            real_scores = discriminator(real_batch, latent_vectors)
+            fake_scores_d = discriminator(fake_batch.detach(), latent_vectors) #We need to detach the fake_batch so all our fake samples are treated as constant and our G gradients dont flow into our D gradient
 
             optimizer_disc.zero_grad()
 
@@ -136,8 +141,8 @@ def train_deep_sdf_gan(
             #Train Generator
             #Eventually turn off gradient calculation for discriminator here since they are not used -> eventual performance increase
             for i in range(specs["LearnRatio"]):
-                fake_batch = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
-                fake_scores = discriminator(fake_batch) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
+                fake_batch, latent_vectors = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                fake_scores = discriminator(fake_batch, latent_vectors) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
 
                 optimizer_dec.zero_grad()
 
@@ -175,10 +180,14 @@ def train_deep_sdf_gan(
         logger.info(f"Epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G}")
         logger.info(f"Avg. Discriminator predictions: real = {avg_real_pred} | fake = {avg_fake_pred} | Accuracy = {pred_accuracy}%" )
 
+        if epoch in snapshot_epochs:
+             save_snapshot(epoch, experiment_directory, decoder)
+
     ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, avg_real_log, avg_fake_log, pred_accuracy_log, epoch) # type: ignore
     ws.save_latest(epoch, experiment_directory, decoder, "latest.pth",None, GAN = GAN_architecture)
-    plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture)
+    plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture, snapshot_epochs = snapshot_epochs)
+    plot_decoder_evolution(experiment_directory, snapshot_epochs)      
             
-            
+def save_snapshot(epoch, experiment_directory, decoder):
 
-
+        ws.save_model(experiment_directory, "SnapshotE-" + str(epoch) + ".pth", decoder, epoch)

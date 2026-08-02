@@ -13,45 +13,98 @@ class ConvGAN_SDF_Sampler():
         
         self._update_random_params()
 
-    def fetch_samples(self, fake_only = False, decoder_clamp_val = None):
+    def fetch_samples(self, fake_only=False, decoder_clamp_val=None):
 
         real_samples = []
         fake_samples = []
+        latent_vectors = []
 
         for i_param, param in enumerate(self.random_params):
 
+            # ---------------------------------------------------------
+            # Set parameter of the real SDF
+            # ---------------------------------------------------------
+
             self.SDF.setRadius(param)
 
-            fake = self._sample_decoder_meshgrid(torch.tensor([[param]], device=self.device)) #For now we implement the latvec as fixed conditioning vector
+            # ---------------------------------------------------------
+            # Create conditioning / latent vector
+            # ---------------------------------------------------------
+
+            latent = torch.tensor(
+                [[param]],
+                dtype=torch.float32,
+                device=self.device
+            )
+
+            latent_vectors.append(latent.squeeze(0))
+
+            # ---------------------------------------------------------
+            # Generate fake SDF
+            # ---------------------------------------------------------
+
+            fake = self._sample_decoder_meshgrid(latent)
 
             fake_samples.append(fake)
 
-            if fake_only == False:
-                real = self._sample_real_sdf_meshgrid()
-                real_samples.append(real) 
+            # ---------------------------------------------------------
+            # Generate real SDF if required
+            # ---------------------------------------------------------
 
-            #print("i_param: ", i_param)
-            #print(f"param is {param}")
-            #print("\n")
-            #print(f"real  {self.real}")
-            #print("\n")
-            #print(f"fake {self.fake}")
-            #print("\n")
+            if not fake_only:
+                real = self._sample_real_sdf_meshgrid()
+                real_samples.append(real)
+
+        # -------------------------------------------------------------
+        # Generate new random parameters for the next call
+        # -------------------------------------------------------------
 
         self._update_random_params()
 
-        fake_samples = torch.stack(fake_samples, dim=0)
+        # -------------------------------------------------------------
+        # Stack fake samples and latent vectors
+        # -------------------------------------------------------------
+
+        fake_samples = torch.stack(
+            fake_samples,
+            dim=0
+        )
+
+        latent_vectors = torch.stack(
+            latent_vectors,
+            dim=0
+        )
+
+        # -------------------------------------------------------------
+        # Clamp fake SDF if requested
+        # -------------------------------------------------------------
+
+        if decoder_clamp_val is not None:
+            fake_samples = torch.clamp(
+                fake_samples,
+                min=-decoder_clamp_val,
+                max=decoder_clamp_val
+            )
+
+        # -------------------------------------------------------------
+        # If only fake samples were requested, return them
+        # -------------------------------------------------------------
 
         if fake_only:
-            return fake_samples
-        
-        if decoder_clamp_val != None:
-            fake_samples = torch.clamp(fake_samples, min = -decoder_clamp_val, max=decoder_clamp_val)
+            return fake_samples, latent_vectors
 
-        
-        real_samples = torch.stack(real_samples, dim=0)
-        
-        return real_samples, fake_samples
+        # -------------------------------------------------------------
+        # Otherwise stack real samples too
+        # -------------------------------------------------------------
+
+        real_samples = torch.stack(
+            real_samples,
+            dim=0
+        )
+
+        return real_samples, fake_samples, latent_vectors
+
+
     
     
     def _update_random_params(self):
