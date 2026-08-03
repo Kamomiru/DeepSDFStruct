@@ -62,7 +62,7 @@ def train_deep_sdf_gan(
     #initialize decoder
     decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
-    discriminator = ConvDiscriminator(disc_specs["n_nodes"], disc_specs["spectral_reg"], specs["CodeLength"]).to(device)
+    discriminator = ConvDiscriminator(disc_specs["n_nodes"], disc_specs["spectral_reg"], specs["CodeLength"], disc_specs["latent_conditioning"]).to(device)
 
     #initialize optimizers
     optimizer_dec = torch.optim.Adam(decoder.parameters(),

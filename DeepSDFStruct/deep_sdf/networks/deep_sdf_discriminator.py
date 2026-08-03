@@ -9,11 +9,13 @@ import math
 sdf_clamp_val = 1.9 #if SDFs are somewhat symetric around 0,0,0 the max SDF value should never be higher than sqrt(3) = 1.7321. Hence we choose a value slightly above that so all extreme and unrealistic values sill stand out
 
 class ConvDiscriminator(nn.Module):
-    def __init__(self, n_nodes, spectral_reg, latent_dim):
+    def __init__(self, n_nodes, spectral_reg, latent_dim, use_latent_conditioning = False):
         super(ConvDiscriminator, self).__init__()
 
         self.HingeGAN = True #to be implemented if standard non-saturating GAN Loss should be used -> sigmoid function is needed.
         self.spectral_reg = spectral_reg
+
+        self.use_latent_conditioning = use_latent_conditioning
         self.latent_dim = latent_dim
         self.latent_feature_dim = 64
 
@@ -51,7 +53,7 @@ class ConvDiscriminator(nn.Module):
 
         layers.append(nn.AdaptiveAvgPool3d(1))
 
-        self.net = nn.Sequential(*layers)
+        self.net = nn.Sequential(*layers) # * is an unpacking operator
 
         # Number of features produced by the Conv3D network
         self.sdf_feature_dim = in_channels
@@ -64,6 +66,8 @@ class ConvDiscriminator(nn.Module):
             nn.LeakyReLU(0.2))
         
 
+        if self.use_latent_conditioning == False:
+            self.latent_feature_dim = 0
         #combine Spatial and Latent through last linear layer
         self.lin = nn.Linear( self.sdf_feature_dim + self.latent_feature_dim, 1 )
 
@@ -75,12 +79,15 @@ class ConvDiscriminator(nn.Module):
         x = self.net(x) # [B, C, 1, 1, 1] -> [B, C]
         x = x.flatten(1)
 
-        # Process Latent Vector
-        latent = self.latent_net(latent)
 
-        # Combine SDF representation and Latent representation
-        x = torch.cat([x, latent], dim=1)
-        x = self.lin(x) # single output
+        if self.use_latent_conditioning:
+            # Process Latent Vector
+            latent = self.latent_net(latent)
+
+            # Combine SDF representation and Latent representation
+            x = torch.cat([x, latent], dim=1)
+        else:
+            x = self.lin(x) # single output
 
         if self.HingeGAN == False:
             x = self.sigm(x)
