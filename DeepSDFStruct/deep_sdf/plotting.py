@@ -33,6 +33,9 @@ import torch
 import matplotlib.pyplot as plt
 
 import DeepSDFStruct.deep_sdf.workspace as ws
+from DeepSDFStruct.deep_sdf.models import DeepSDFModel
+from DeepSDFStruct.SDF import SDFfromDeepSDF
+from DeepSDFStruct.deep_sdf.workspace import load_trained_model
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +74,7 @@ def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
-def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN = False):
+def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN = False, snapshot_epochs = []):
 
     logs = torch.load(os.path.join(experiment_directory, ws.logs_filename))
 
@@ -250,10 +253,19 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
         ax[3].set_ylim(-2, 102)
         ax[3].legend()
 
-
+        #Plot Snapshots as Vertical Lines
         for axis in ax:
-            axis.grid()
+            for snapshot in snapshot_epochs:
+                axis.axvline(
+                    x=snapshot,
+                    color="grey",
+                    linestyle="--",
+                    linewidth=1,
+                    alpha=0.5,
+                )
+        plt.plot([], [], linestyle="--", color="gray", label=f"Snapshots: {snapshot_epochs}") #ads legend for snapshots
 
+        axis.grid() #type: ignore
 
         plt.tight_layout()
 
@@ -297,3 +309,68 @@ def to_numpy(x):
     if torch.is_tensor(x):
         return x.detach().cpu().numpy()
     return np.asarray(x)
+
+def plot_decoder_set(
+    experiment_directory,
+    decoder,
+    ax,
+    origin=(0,0,0),
+    normal=(0,1,0),
+    lat_vec_set=[0.1,0.5,0.9],
+    device="cpu"
+):
+    decoder.eval()
+
+    sdf = SDFfromDeepSDF(
+        DeepSDFModel(decoder, torch.tensor([[lat_vec_set[0]]]), device)
+    )
+
+    for i, lat_vec_val in enumerate(lat_vec_set):
+        sdf.set_latent_vec(torch.tensor([lat_vec_val]))
+        sdf.plot_slice(origin, normal, ax=ax[i])
+        ax[i].set_title(f"Latent Vector: {lat_vec_val}")
+
+def plot_decoder_evolution(
+    experiment_directory,
+    snapshot_epochs,
+    origin=(0.0, 0.0, 0.0),
+    normal=(0.0, 1.0, 0.0),
+    lat_vec_set=[0.1, 0.5, 0.9],
+    device="cpu"
+):
+    fig, ax = plt.subplots(
+        len(snapshot_epochs),
+        len(lat_vec_set),
+        squeeze=False,
+        figsize=(4 * len(lat_vec_set), 4 * len(snapshot_epochs))
+    )
+
+    # General title
+    fig.suptitle("Decoder Evolution", fontsize=16)
+
+    # Column titles
+    for j, lat_vec in enumerate(lat_vec_set):
+        ax[0, j].set_title(f"Latent Vector = {lat_vec}")
+
+    for i, snapshot in enumerate(snapshot_epochs):
+        decoder = load_trained_model(
+            experiment_directory,
+            "SnapshotE-" + str(snapshot),
+            device
+        )
+
+        plot_decoder_set(
+            experiment_directory,
+            decoder,
+            ax=ax[i],
+            origin=origin,
+            normal=normal,
+            lat_vec_set=lat_vec_set,
+            device=device
+        )
+
+        # Optional: label each row by epoch
+        ax[i, 0].set_ylabel(f"Epoch {snapshot}")
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for suptitle
+    plt.savefig(experiment_directory + "/DecoderTrainingPlot.png")
