@@ -1,9 +1,10 @@
 import torch
 import logging
 import socket
-import math
 import tqdm
 import time
+import os
+import sys
 
 import DeepSDFStruct.deep_sdf
 import DeepSDFStruct.deep_sdf.workspace as ws
@@ -34,6 +35,18 @@ def train_deep_sdf_gan(
         device_name = "cpu"
     else:
         raise RuntimeError("Device must be either cpu or cuda")
+
+    #check if experiment has already been run before
+    print(experiment_directory + "/ModelParameters")
+
+    if os.path.isdir(experiment_directory + "/ModelParameters"):
+        answer = input("The network has already been trained. Do you wish to retrain? (Y/N)")
+
+        if answer.lower() == "y" or answer.lower() == "":
+            print("continuing with training setup")
+        if answer.lower() == "n":
+            print("Stopping training...")
+            sys.exit()
     
     #load experiment specs
     specs = ws.load_experiment_specifications(experiment_directory)
