@@ -1,0 +1,10 @@
+{
+    "loss": 0.011905525624752045,
+    "num_epochs": 500,
+    "timestamp": "2026-06-06 15:15:41",
+    "host_name": "DESKTOP-EFL9B1T",
+    "device": "cuda",
+    "training_duration": "0:50:00",
+    "data_dir": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset",
+    "version": "0.1.dev249+g7dc08c201"
+}

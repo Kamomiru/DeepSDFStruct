@@ -103,13 +103,7 @@ Desktop.ini
 !latest.pth
 
 # Files generated during testing
-DeepSDFStruct/trained_models/test_experiment/**/latest.pth
-DeepSDFStruct/trained_models/test_experiment_hierarchical/**/latest.pth
-DeepSDFStruct/trained_models/test_experiment/**/Logs.png
-DeepSDFStruct/trained_models/test_experiment_hierarchical/**/Logs.png
-DeepSDFStruct/trained_models/**/Reconstructions/*
 training_data
-tests/tmp_outputs
 *.vtk
 
 # doc temp files

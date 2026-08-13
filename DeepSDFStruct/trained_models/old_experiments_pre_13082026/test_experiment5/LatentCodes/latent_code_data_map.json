@@ -1,0 +1,606 @@
+{
+    "data_source": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset",
+    "sdf_samples_subdir": "SdfSamples",
+    "latent_codes": [
+        {
+            "latent_index": 0,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00000.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00000.npz"
+        },
+        {
+            "latent_index": 1,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00001.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00001.npz"
+        },
+        {
+            "latent_index": 2,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00002.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00002.npz"
+        },
+        {
+            "latent_index": 3,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00003.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00003.npz"
+        },
+        {
+            "latent_index": 4,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00004.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00004.npz"
+        },
+        {
+            "latent_index": 5,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00005.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00005.npz"
+        },
+        {
+            "latent_index": 6,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00006.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00006.npz"
+        },
+        {
+            "latent_index": 7,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00007.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00007.npz"
+        },
+        {
+            "latent_index": 8,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00008.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00008.npz"
+        },
+        {
+            "latent_index": 9,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00009.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00009.npz"
+        },
+        {
+            "latent_index": 10,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00010.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00010.npz"
+        },
+        {
+            "latent_index": 11,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00011.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00011.npz"
+        },
+        {
+            "latent_index": 12,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00012.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00012.npz"
+        },
+        {
+            "latent_index": 13,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00013.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00013.npz"
+        },
+        {
+            "latent_index": 14,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00014.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00014.npz"
+        },
+        {
+            "latent_index": 15,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00015.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00015.npz"
+        },
+        {
+            "latent_index": 16,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00016.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00016.npz"
+        },
+        {
+            "latent_index": 17,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00017.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00017.npz"
+        },
+        {
+            "latent_index": 18,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00018.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00018.npz"
+        },
+        {
+            "latent_index": 19,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00019.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00019.npz"
+        },
+        {
+            "latent_index": 20,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00020.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00020.npz"
+        },
+        {
+            "latent_index": 21,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00021.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00021.npz"
+        },
+        {
+            "latent_index": 22,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00022.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00022.npz"
+        },
+        {
+            "latent_index": 23,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00023.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00023.npz"
+        },
+        {
+            "latent_index": 24,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00024.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00024.npz"
+        },
+        {
+            "latent_index": 25,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00025.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00025.npz"
+        },
+        {
+            "latent_index": 26,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00026.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00026.npz"
+        },
+        {
+            "latent_index": 27,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00027.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00027.npz"
+        },
+        {
+            "latent_index": 28,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00028.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00028.npz"
+        },
+        {
+            "latent_index": 29,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00029.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00029.npz"
+        },
+        {
+            "latent_index": 30,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00030.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00030.npz"
+        },
+        {
+            "latent_index": 31,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00031.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00031.npz"
+        },
+        {
+            "latent_index": 32,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00032.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00032.npz"
+        },
+        {
+            "latent_index": 33,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00033.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00033.npz"
+        },
+        {
+            "latent_index": 34,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00034.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00034.npz"
+        },
+        {
+            "latent_index": 35,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00035.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00035.npz"
+        },
+        {
+            "latent_index": 36,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00036.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00036.npz"
+        },
+        {
+            "latent_index": 37,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00037.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00037.npz"
+        },
+        {
+            "latent_index": 38,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00038.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00038.npz"
+        },
+        {
+            "latent_index": 39,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00039.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00039.npz"
+        },
+        {
+            "latent_index": 40,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00040.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00040.npz"
+        },
+        {
+            "latent_index": 41,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00041.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00041.npz"
+        },
+        {
+            "latent_index": 42,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00042.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00042.npz"
+        },
+        {
+            "latent_index": 43,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00043.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00043.npz"
+        },
+        {
+            "latent_index": 44,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00044.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00044.npz"
+        },
+        {
+            "latent_index": 45,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00045.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00045.npz"
+        },
+        {
+            "latent_index": 46,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00046.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00046.npz"
+        },
+        {
+            "latent_index": 47,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00047.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00047.npz"
+        },
+        {
+            "latent_index": 48,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00048.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00048.npz"
+        },
+        {
+            "latent_index": 49,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00049.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00049.npz"
+        },
+        {
+            "latent_index": 50,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00050.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00050.npz"
+        },
+        {
+            "latent_index": 51,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00051.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00051.npz"
+        },
+        {
+            "latent_index": 52,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00052.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00052.npz"
+        },
+        {
+            "latent_index": 53,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00053.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00053.npz"
+        },
+        {
+            "latent_index": 54,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00054.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00054.npz"
+        },
+        {
+            "latent_index": 55,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00055.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00055.npz"
+        },
+        {
+            "latent_index": 56,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00056.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00056.npz"
+        },
+        {
+            "latent_index": 57,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00057.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00057.npz"
+        },
+        {
+            "latent_index": 58,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00058.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00058.npz"
+        },
+        {
+            "latent_index": 59,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00059.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00059.npz"
+        },
+        {
+            "latent_index": 60,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00060.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00060.npz"
+        },
+        {
+            "latent_index": 61,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00061.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00061.npz"
+        },
+        {
+            "latent_index": 62,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00062.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00062.npz"
+        },
+        {
+            "latent_index": 63,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00063.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00063.npz"
+        },
+        {
+            "latent_index": 64,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00064.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00064.npz"
+        },
+        {
+            "latent_index": 65,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00065.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00065.npz"
+        },
+        {
+            "latent_index": 66,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00066.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00066.npz"
+        },
+        {
+            "latent_index": 67,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00067.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00067.npz"
+        },
+        {
+            "latent_index": 68,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00068.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00068.npz"
+        },
+        {
+            "latent_index": 69,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00069.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00069.npz"
+        },
+        {
+            "latent_index": 70,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00070.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00070.npz"
+        },
+        {
+            "latent_index": 71,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00071.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00071.npz"
+        },
+        {
+            "latent_index": 72,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00072.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00072.npz"
+        },
+        {
+            "latent_index": 73,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00073.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00073.npz"
+        },
+        {
+            "latent_index": 74,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00074.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00074.npz"
+        },
+        {
+            "latent_index": 75,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00075.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00075.npz"
+        },
+        {
+            "latent_index": 76,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00076.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00076.npz"
+        },
+        {
+            "latent_index": 77,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00077.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00077.npz"
+        },
+        {
+            "latent_index": 78,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00078.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00078.npz"
+        },
+        {
+            "latent_index": 79,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00079.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00079.npz"
+        },
+        {
+            "latent_index": 80,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00080.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00080.npz"
+        },
+        {
+            "latent_index": 81,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00081.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00081.npz"
+        },
+        {
+            "latent_index": 82,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00082.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00082.npz"
+        },
+        {
+            "latent_index": 83,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00083.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00083.npz"
+        },
+        {
+            "latent_index": 84,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00084.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00084.npz"
+        },
+        {
+            "latent_index": 85,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00085.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00085.npz"
+        },
+        {
+            "latent_index": 86,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00086.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00086.npz"
+        },
+        {
+            "latent_index": 87,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00087.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00087.npz"
+        },
+        {
+            "latent_index": 88,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00088.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00088.npz"
+        },
+        {
+            "latent_index": 89,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00089.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00089.npz"
+        },
+        {
+            "latent_index": 90,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00090.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00090.npz"
+        },
+        {
+            "latent_index": 91,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00091.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00091.npz"
+        },
+        {
+            "latent_index": 92,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00092.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00092.npz"
+        },
+        {
+            "latent_index": 93,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00093.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00093.npz"
+        },
+        {
+            "latent_index": 94,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00094.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00094.npz"
+        },
+        {
+            "latent_index": 95,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00095.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00095.npz"
+        },
+        {
+            "latent_index": 96,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00096.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00096.npz"
+        },
+        {
+            "latent_index": 97,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00097.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00097.npz"
+        },
+        {
+            "latent_index": 98,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00098.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00098.npz"
+        },
+        {
+            "latent_index": 99,
+            "relative_npz_filename": "microstructure\\Chi3D_center\\Chi3D_center_00099.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\Chi3D_center\\Chi3D_center_00099.npz"
+        },
+        {
+            "latent_index": 100,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00000.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00000.npz"
+        },
+        {
+            "latent_index": 101,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00001.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00001.npz"
+        },
+        {
+            "latent_index": 102,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00002.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00002.npz"
+        },
+        {
+            "latent_index": 103,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00003.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00003.npz"
+        },
+        {
+            "latent_index": 104,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00004.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00004.npz"
+        },
+        {
+            "latent_index": 105,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00005.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00005.npz"
+        },
+        {
+            "latent_index": 106,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00006.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00006.npz"
+        },
+        {
+            "latent_index": 107,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00007.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00007.npz"
+        },
+        {
+            "latent_index": 108,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00008.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00008.npz"
+        },
+        {
+            "latent_index": 109,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00009.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00009.npz"
+        },
+        {
+            "latent_index": 110,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00010.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00010.npz"
+        },
+        {
+            "latent_index": 111,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00011.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00011.npz"
+        },
+        {
+            "latent_index": 112,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00012.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00012.npz"
+        },
+        {
+            "latent_index": 113,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00013.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00013.npz"
+        },
+        {
+            "latent_index": 114,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00014.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00014.npz"
+        },
+        {
+            "latent_index": 115,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00015.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00015.npz"
+        },
+        {
+            "latent_index": 116,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00016.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00016.npz"
+        },
+        {
+            "latent_index": 117,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00017.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00017.npz"
+        },
+        {
+            "latent_index": 118,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00018.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00018.npz"
+        },
+        {
+            "latent_index": 119,
+            "relative_npz_filename": "microstructure\\CrossLattice\\CrossLattice_00019.npz",
+            "npz_filename": "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Mkofler Dataset\\SdfSamples\\microstructure\\CrossLattice\\CrossLattice_00019.npz"
+        }
+    ]
+}
