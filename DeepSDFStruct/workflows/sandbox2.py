@@ -14,7 +14,7 @@ from DeepSDFStruct.deep_sdf.GAN_helpers.Hinge_GAN_loss import *
 from DeepSDFStruct.deep_sdf.plotting import *
 
 device = torch.device("cpu")
-experiment_directory = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/gan_test_experiment12"
+experiment_directory = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/gan_test_experiment16"
 
 #load experiment specs
 specs = ws.load_experiment_specifications(experiment_directory)
@@ -23,11 +23,12 @@ logger.info(f"Reading experiment configuration from {experiment_directory}")
 logger.info("Experiment description: \n" + specs["Description"])
 GAN_architecture = specs["GANArchitecture"]
 
+
 real_sdf = real_sdf = CrossMsSDF(0.0)
 decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
 
 
-sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, 2, 4, specs["SdfParameterBounds"], device)
+sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, 2, 2, specs["SdfParameterBounds"], device, add_latent= True)
 
 samples = sampler.fetch_samples()
 
@@ -38,6 +39,5 @@ print()
 print("FAKE")
 print(samples[1])
 print(samples[1].shape)
-print("Latent Vecs")
-print(samples[2])
-print(samples[2].shape)
+print("Latent Vecs:")
+print(samples[2]) #type: ignore

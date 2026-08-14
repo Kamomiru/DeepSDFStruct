@@ -142,7 +142,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
         if ax is None:
             fig, ax = plt.subplots(
-                2,
+                3,
                 2,
                 figsize=(14, 8)
             )
@@ -153,91 +153,174 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
 
         # --------------------
-        # GAN Losses (top left)
+        # Losses (top left)
         # --------------------
+
+        # Discriminator
         ax[0].plot(
             np.arange(num_iters) / iters_per_epoch,
             logs["loss_D"],
-            "#e74c3c",
-            alpha=0.3,
-            label="Discriminator Loss",
+            color="#e74c3c",
+            alpha=0.6,
+            linewidth=1,
+            label="_nolegend_",
         )
+
+        smoothed_loss_D = running_mean(logs["loss_D"], 41)
 
         ax[0].plot(
-            np.arange(20, num_iters-20) / iters_per_epoch,
+            np.arange(20, num_iters - 20) / iters_per_epoch,
             smoothed_loss_D,
-            "#c0392b",
-            label="Discriminator Loss (Mean)",
+            color="#c0392b",
+            linewidth=2,
+            label="D",
         )
 
+
+        # Generator total
         ax[0].plot(
             np.arange(num_iters) / iters_per_epoch,
             logs["loss_G"],
-            "#3498db",
-            alpha=0.3,
-            label="Generator Loss",
+            color="#1F4E79",
+            alpha=0.6,
+            linewidth=1,
+            label="_nolegend_",
         )
+
+        smoothed_loss_G = running_mean(logs["loss_G"], 41)
 
         ax[0].plot(
-            np.arange(20, num_iters-20) / iters_per_epoch,
+            np.arange(20, num_iters - 20) / iters_per_epoch,
             smoothed_loss_G,
-            "#21618c",
-            label="Generator Loss (Mean)",
+            color="#1F4E79",
+            linewidth=2,
+            label="G total",
         )
 
+
+        # Generator GAN component
+        if "loss_G_GAN" in logs:
+
+            ax[0].plot(
+                np.arange(num_iters) / iters_per_epoch,
+                logs["loss_G_GAN"],
+                color="#2E75B6",
+                alpha=0.6,
+                linewidth=1,
+                label="_nolegend_",
+            )
+
+            smoothed_loss_G_GAN = running_mean(logs["loss_G_GAN"], 41)
+
+            ax[0].plot(
+                np.arange(20, num_iters - 20) / iters_per_epoch,
+                smoothed_loss_G_GAN,
+                color="#2E75B6",
+                linewidth=1.8,
+                linestyle="--",
+                label="G GAN",
+            )
+
+
+        # Generator classifier component
+        if "loss_G_cla" in logs:
+
+            ax[0].plot(
+                np.arange(num_iters) / iters_per_epoch,
+                logs["loss_G_cla"],
+                color="#6FA8DC",
+                alpha=0.6,
+                linewidth=1,
+                label="_nolegend_",
+            )
+
+            smoothed_loss_G_cla = running_mean(logs["loss_G_cla"], 41)
+
+            ax[0].plot(
+                np.arange(20, num_iters - 20) / iters_per_epoch,
+                smoothed_loss_G_cla,
+                color="#6FA8DC",
+                linewidth=1.8,
+                linestyle="--",
+                label="G CLA",
+            )
+
         ax[0].set_yscale("log")
+
         ax[0].set(
             xlabel="Epoch",
             ylabel="Loss",
             title="GAN Losses"
         )
-        ax[0].legend()
+
+        ax[0].legend(
+            loc="upper right",
+            fontsize=8,
+            ncol=2,
+            framealpha=0.8,
+        )
 
 
         # --------------------
-        # Predictions (top right)
+        # Learning Rates (top right)
         # --------------------
         ax[1].plot(
-            logs["avg_real_pred"],
-            label="Real Prediction"
+            logs["lr_log_D"],
+            label="Discriminator LR"
         )
 
         ax[1].plot(
-            logs["avg_fake_pred"],
-            label="Fake Prediction"
+            logs["lr_log_G"],
+            label="Generator LR"
         )
+
+        if "lr_log_C" in logs:
+            ax[1].plot(
+                logs["lr_log_C"],
+                label="Classifier LR",
+                color = "#6c3483"
+            )
 
         ax[1].set(
             xlabel="Epoch",
-            ylabel="Avg. Logit Score",
-            title="Discriminator Predictions"
+            ylabel="Learning Rate",
+            title="Learning Rates"
         )
         ax[1].legend()
 
 
         # --------------------
-        # Learning Rates (bottom left)
+        # Discriminator Predictions (middle left)
         # --------------------
         ax[2].plot(
-            logs["lr_log_D"],
-            label="Discriminator LR"
+            logs["avg_real_pred"],
+            label="Real Prediction"
         )
 
         ax[2].plot(
-            logs["lr_log_G"],
-            label="Generator LR"
+            logs["avg_fake_pred"],
+            label="Fake Prediction"
+        )
+
+        ax[2].axhline(
+            0,
+            color="#4B4B4B",
+            alpha = 0.5,
+            label="Decision Boundary",
+            linestyle="dashdot"
         )
 
         ax[2].set(
             xlabel="Epoch",
-            ylabel="Learning Rate",
-            title="Learning Rates"
+            ylabel="Avg. Logit Score",
+            title="Discriminator Predictions"
         )
         ax[2].legend()
 
 
+
         # --------------------
-        # Accuracy (bottom right)
+        # Discriminator Accuracy (middle right)
         # --------------------
         ax[3].plot(
             logs["pred_accuracy"],
@@ -252,6 +335,55 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
         ax[3].set_ylim(-2, 102)
         ax[3].legend()
+
+
+        # --------------------
+        # Classifier std deviation (bottom left)
+        # --------------------
+        if "RMSE_error_log_C" in logs:
+            ax[4].plot(
+                logs["RMSE_error_log_C"],
+                label="Classifier RMSE Error"
+            )
+
+            ax[4].set(
+                        xlabel="Epoch",
+                        ylabel="RMSE Error",
+                        title="Classifier RMSE Error"
+                    )
+
+            ax[4].legend()
+
+
+        # --------------------
+        # Classifier Loss (bottom right)
+        # --------------------
+        if "loss_C" in logs:
+
+            ax[5].plot(
+                np.arange(num_iters) / iters_per_epoch,
+                logs["loss_C"],
+                color="#9b59b6",
+                alpha=0.6,
+                linewidth=1,
+                label="Classifier Loss",
+            )
+
+            smoothed_loss_C = running_mean(logs["loss_C"], 41)
+
+            ax[5].plot(
+                np.arange(20, num_iters - 20) / iters_per_epoch,
+                smoothed_loss_C,
+                color="#6c3483",
+                linewidth=2,
+                label="Classifier Loss (Mean)",
+            )
+            ax[4].set(
+                xlabel="Epoch",
+                ylabel="Classifier Loss",
+                title="Classifier Loss"
+            )
+            ax[5].legend()
 
         #Plot Snapshots as Vertical Lines
         for axis in ax:
@@ -274,6 +406,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             plt.close()
         elif show_plt:
             plt.show()
+
 
 
 

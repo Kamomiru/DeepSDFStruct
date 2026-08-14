@@ -2,7 +2,7 @@ import torch
 from DeepSDFStruct.SDF import SDFfromDeepSDF
 
 class ConvGAN_SDF_Sampler():
-    def __init__(self, SDF, decoder, n_nodes, n_samples, sdf_param_bounds, device):
+    def __init__(self, SDF, decoder, n_nodes, n_samples, sdf_param_bounds, device, add_latent = False):
         self.n_nodes = n_nodes
         self.n_samples = n_samples
         self.device = device
@@ -10,6 +10,7 @@ class ConvGAN_SDF_Sampler():
         self.SDF = SDF
         self.decoder = decoder
         self.sdf_param_bounds = sdf_param_bounds
+        self.add_latent = add_latent
         
         self._update_random_params()
 
@@ -17,10 +18,13 @@ class ConvGAN_SDF_Sampler():
 
         real_samples = []
         fake_samples = []
+        latent_parameters = []
 
         for i_param, param in enumerate(self.random_params):
 
             self.SDF.setRadius(param)
+            if self.add_latent:
+                latent_parameters.append(param)
 
             fake = self._sample_decoder_meshgrid(torch.tensor([[param]], device=self.device)) #For now we implement the latvec as fixed conditioning vector
 
@@ -42,6 +46,30 @@ class ConvGAN_SDF_Sampler():
 
         fake_samples = torch.stack(fake_samples, dim=0)
 
+
+        if decoder_clamp_val is not None:
+            fake_samples = torch.clamp(
+            fake_samples,
+            min=-decoder_clamp_val,
+            max=decoder_clamp_val
+        )
+
+        if fake_only:
+            if self.add_latent:
+                latent_parameters = torch.stack(latent_parameters)
+                return fake_samples, latent_parameters
+            else:
+                return fake_samples
+
+        real_samples = torch.stack(real_samples, dim=0)
+
+        if self.add_latent:
+            latent_parameters = torch.stack(latent_parameters)
+            return real_samples, fake_samples, latent_parameters
+        else:
+            return real_samples, fake_samples
+
+
         if fake_only:
             return fake_samples
         
@@ -50,8 +78,12 @@ class ConvGAN_SDF_Sampler():
 
         
         real_samples = torch.stack(real_samples, dim=0)
-        
-        return real_samples, fake_samples
+
+        if self.add_latent:
+            latent_parameters = torch.stack(latent_parameters)
+            return real_samples, fake_samples, latent_parameters
+        else:
+            return real_samples, fake_samples
     
     
     def _update_random_params(self):

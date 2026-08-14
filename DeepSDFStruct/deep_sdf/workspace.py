@@ -429,6 +429,11 @@ def save_logs_GAN(
         avg_real_pred,
         avg_fake_pred,
         pred_accuracy,
+        loss_log_C,
+        RMSE_error_log_C,
+        lr_log_C,
+        loss_log_G_GAN,
+        loss_log_G_cla,
         epoch
 ):
     
@@ -442,6 +447,11 @@ def save_logs_GAN(
             "avg_real_pred": avg_real_pred,
             "avg_fake_pred": avg_fake_pred,
             "pred_accuracy": pred_accuracy,
+            "loss_C": loss_log_C,
+            "RMSE_error_log_C": RMSE_error_log_C,
+            "lr_log_C": lr_log_C, 
+            "loss_G_GAN": loss_log_G_GAN,
+            "loss_G_cla": loss_log_G_cla,
         },
         os.path.join(experiment_directory, logs_filename)
     )
@@ -458,6 +468,26 @@ def load_logs(experiment_directory):
 
     #GAN Logs
     if "loss_D" in data:
+
+        # GAN + Classifier
+        if "loss_C" in data:
+            return (
+                data["loss_D"],
+                data["loss_G"],
+                data["lr_log_D"],
+                data["lr_log_G"],
+                data["avg_real_pred"],
+                data["avg_fake_pred"],
+                data["pred_accuracy"],
+                data["loss_C"],
+                data["RMSE_error_log_C"],
+                data["lr_log_C"],
+                data["loss_G_GAN"],
+                data["loss_G_cla"],
+                data["epoch"],
+            )
+
+        # GAN without Classifier
         return (
             data["loss_D"],
             data["loss_G"],

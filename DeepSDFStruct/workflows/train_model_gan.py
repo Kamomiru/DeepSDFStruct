@@ -2,14 +2,10 @@ from DeepSDFStruct.deep_sdf.training_gan import train_deep_sdf_gan
 import torch
 import os
 
-experiment_name = "experiment1"
-test = True
+experiment_name = "gan_test_experiment20"
 
 test_experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/" + experiment_name
 experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/" + experiment_name
-
-print(test_experiment_dir)
-print(os.path.isdir(test_experiment_dir))
 
 if os.path.isdir(test_experiment_dir):
     path = test_experiment_dir
