@@ -1,12 +1,12 @@
 {
-    "Description" : "Testing ClassifierLossRatio. A Ratio to force GAN and Classifier loss to always relative to each other defined by the ClassifierLossRatio",
-    "RunFeatures" : "Using loss_Gan.abs()",
+    "Description" : "Full experiment Run with Classifier",
+    "RunFeatures" : "Same as experiment 3 but with lower decoder learning rate and longer training.",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
     "TestSplit": "splits/cross.json",
     "ReconstructionSplit": "",
     "NetworkSpecs" : {
-      "dims" : [64, 64, 64, 64, 64, 64],
+      "dims" : [96, 96, 96, 96, 96, 96],
       "dropout" : [0, 1, 2, 3, 4, 5, 6, 7],
       "dropout_prob" : 0.2,
       "norm_layers" : [0, 1, 2, 3, 4, 5, 6, 7],
@@ -22,11 +22,11 @@
       "spectral_reg": true
     },
     "CodeLength" : 1,
-    "NumEpochs" : 100,
-    "SnapshotFrequency" : 10,
+    "NumEpochs" : 800,
+    "SnapshotFrequency" : 25,
     "AdditionalSnapshots" : [],
     "InitialLearningRates" : {
-        "decoder" : 0.02,
+        "decoder" : 0.01,
         "discriminator" : 0.0001,
         "classifier" : 0.0001
     },

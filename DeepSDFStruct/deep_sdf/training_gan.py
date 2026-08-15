@@ -132,6 +132,8 @@ def train_deep_sdf_gan(
     epoch_loss_C: float = 0.0
     epoch_loss_G_GAN: float = 0.0
     epoch_loss_G_cla: float = 0.0
+    alpha_loss = specs["ClassifierLossRatio"]
+    lambda_relative: float = 1.0
 
     #initialization
     if specs["UseClassifier"]:
@@ -217,10 +219,15 @@ def train_deep_sdf_gan(
                     freeze_network(classifier) #type: ignore
                     pred_latent_fake = classifier(fake_batch)
 
-                    loss_G_cla = specs["lambdaCla"] * torch.nn.functional.smooth_l1_loss(pred_latent_fake, latent_parameters_fake)
 
-                    loss_G_GAN *= specs["lambdaGAN"]
+                    loss_G_cla = torch.nn.functional.smooth_l1_loss(pred_latent_fake, latent_parameters_fake)
+
+                    lambda_relative = calc_lambda_relative(loss_G_GAN, loss_G_cla, alpha_loss)
+
+                    loss_G_cla *= lambda_relative
+
                     loss_G = loss_G_GAN + loss_G_cla
+
 
                     epoch_loss_G_cla += loss_G_cla.item()
                 else:
@@ -270,7 +277,7 @@ def train_deep_sdf_gan(
         
 
         logger.info(f"Epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G} | C = {epoch_loss_C}")
-        logger.info(f"Partial Generator loss is: G_GAN = {epoch_loss_G_GAN} (λGAN={specs['lambdaGAN']}) | G_cla = {epoch_loss_G_cla} (λCLA={specs['lambdaCla']})")
+        logger.info(f"Partial Generator loss is: G_GAN = {epoch_loss_G_GAN} | G_cla = {epoch_loss_G_cla} (λrel={lambda_relative})")
         logger.info(f"Avg. Discriminator predictions: real = {avg_real_pred} | fake = {avg_fake_pred} | Accuracy = {pred_accuracy}%" )
         logger.info(f"Classifier Metrics: RMSE = {RMSE_error_C}")
     
@@ -289,3 +296,11 @@ def save_snapshot(epoch, experiment_directory, decoder):
 def freeze_network(network, bool = True):
     for param in network.parameters():
         param.requires_grad = not bool
+
+def calc_lambda_relative(loss_GAN, loss_cla, alpha, eps=1e-8):
+    if alpha == None: #if alpha is set to None, dont apply a weight to the losses
+        return 1
+
+    lambda_relative = (loss_GAN.detach()/(loss_cla.detach() + eps)) * (alpha/(1-alpha))
+    #maybe also clamp lambda_relative?
+    return lambda_relative

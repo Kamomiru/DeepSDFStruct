@@ -1,6 +1,6 @@
 {
     "Description" : "Testing ClassifierLossRatio. A Ratio to force GAN and Classifier loss to always relative to each other defined by the ClassifierLossRatio",
-    "RunFeatures" : "Using loss_Gan.abs()",
+    "RunFeatures" : "NOT! Using loss_Gan.abs()",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
     "TestSplit": "splits/cross.json",
@@ -22,7 +22,7 @@
       "spectral_reg": true
     },
     "CodeLength" : 1,
-    "NumEpochs" : 100,
+    "NumEpochs" : 200,
     "SnapshotFrequency" : 10,
     "AdditionalSnapshots" : [],
     "InitialLearningRates" : {

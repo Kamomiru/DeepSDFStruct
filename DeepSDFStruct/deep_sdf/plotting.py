@@ -307,8 +307,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             color="#4B4B4B",
             alpha = 0.5,
             label="Decision Boundary",
-            linestyle="dashdot"
-        )
+            linestyle="dashdot")
 
         ax[2].set(
             xlabel="Epoch",
