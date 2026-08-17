@@ -1,5 +1,5 @@
 {
-    "Description" : "Rerunning test_experiment_23 to get some info on training collapse due to bad initial decoder initialization",
+    "Description" : "Testing decoder starting condtion and training collapse connection.",
     "RunFeatures" : "",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
@@ -22,14 +22,15 @@
       "spectral_reg": true
     },
     "CodeLength" : 1,
-    "NumEpochs" : 250,
-    "SnapshotFrequency" : 25,
+    "NumEpochs" : 100,
+    "SnapshotFrequency" : 10,
     "AdditionalSnapshots" : [],
     "InitialLearningRates" : {
         "decoder" : 0.01,
         "discriminator" : 0.0001,
         "classifier" : 0.0001
     },
+    "ClassifierLossRatio": 0.3,
     "LearningRateSchedule" : [
       {
         "Type" : "Step",
@@ -56,7 +57,6 @@
     "CodeBound" : 1.0,
     "GANArchitecture" : true,
     "UseClassifier": true,
-    "ClassifierLossRatio": 0.3,
     "RandomMeshgridOffset": true
   }
   

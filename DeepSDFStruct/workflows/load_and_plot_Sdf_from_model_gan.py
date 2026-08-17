@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     #---------------MODEL LOADING---------------
     device = torch.device("cpu")
-    path = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/gan_experiment7"
+    path = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/gan_test_experiment23.3"
 
 
     decoder = load_trained_model(path, "latest", device)

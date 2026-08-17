@@ -512,7 +512,7 @@ def plot_decoder_evolution(
         ax[i, 0].set_ylabel(f"Epoch {snapshot}")
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for subtitle #type: ignore
-    plt.savefig(experiment_directory + "/DecoderTrainingPlot.png")
+    plt.savefig(str(experiment_directory) + "/DecoderTrainingPlot.png")
 
 def plot_decoder_latent_effect(
     experiment_directory,
@@ -543,4 +543,99 @@ def plot_decoder_latent_effect(
         ax.grid(True)
 
     plt.tight_layout()
-    plt.savefig(experiment_directory + "/LatestLatentEffect.png")
+    plt.savefig(str(experiment_directory) + "/LatestLatentEffect.png")
+
+def plot_decoder_scatter(
+    decoder,
+    experiment_directory,
+    epoch,
+    latent_vec=None,
+    ax=None,
+    resolution=30,
+    y_value=0.5,
+):
+    # Get device from decoder
+    device = next(decoder.parameters()).device
+
+    # Latent vector
+    if latent_vec is None:
+        latent_vec = torch.tensor(
+            [[0.5]],
+            dtype=torch.float32,
+            device=device,
+        )
+    else:
+        latent_vec = latent_vec.to(device)
+
+    # Create SDF
+    sdf = SDFfromDeepSDF(DeepSDFModel(decoder,latent_vec,device))
+
+    # -------- Scatter Plot --------
+    x = torch.linspace(-1.0,1.0,resolution,device=device)
+    z = torch.linspace(-1.0,1.0,resolution,device=device)
+    X, Z = torch.meshgrid(x,z,indexing="ij")
+
+    points = torch.stack([
+        X.reshape(-1),
+        torch.full((X.numel(),),y_value,device=device),
+        Z.reshape(-1)
+    ], dim=1)
+
+    # Evaluate decoder
+    with torch.no_grad():
+        values = sdf.forward(points).squeeze()
+
+    # Move data to CPU for matplotlib
+    points_cpu = points.detach().cpu()
+    values_cpu = values.detach().cpu()
+
+    # Create figure
+    if ax is None:
+        fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(
+            111,
+            projection="3d"
+        )
+    else:
+        fig = ax.figure
+
+    # -------- Scatter --------
+
+    sc = ax.scatter(
+        points_cpu[:, 0].numpy(),
+        values_cpu.numpy(),
+        points_cpu[:, 2].numpy(),
+        cmap="viridis",
+        c=values_cpu.numpy(),
+        s=40,
+    )
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("value")
+    ax.set_zlabel("z")
+
+    ax.set_title(
+        f"Decoder Scatter Plot - Epoch {epoch}"
+    )
+
+    fig.colorbar(
+        sc,
+        ax=ax,
+        label="SDF Value"
+    )
+
+    fig.tight_layout()
+
+    # -------- Save --------
+
+    if experiment_directory is not None:
+        from pathlib import Path
+
+        experiment_directory = Path(experiment_directory)
+        experiment_directory.mkdir(parents=True,exist_ok=True)
+        fig.savefig(experiment_directory /f"decoderScatterPlot-E{epoch}.png",dpi=200,bbox_inches="tight")
+
+    return fig, ax
+
+
+

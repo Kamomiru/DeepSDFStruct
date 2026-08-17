@@ -6,7 +6,7 @@ import time
 import os
 import sys
 
-import DeepSDFStruct.deep_sdf
+import DeepSDFStruct
 import DeepSDFStruct.deep_sdf.workspace as ws
 from DeepSDFStruct.deep_sdf.networks.deep_sdf_discriminator import ConvDiscriminator
 from DeepSDFStruct.deep_sdf.networks.deep_sdf_classifier import ConvClassifier
@@ -26,6 +26,7 @@ logger = logging.getLogger(DeepSDFStruct.__name__)
 def train_deep_sdf_gan(
     experiment_directory, continue_from=None, batch_split=1, device=None
 ):
+    experiment_directory = str(experiment_directory) #convert shutil path into str if passed
     #----Compute Device Checking----
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -145,6 +146,7 @@ def train_deep_sdf_gan(
         classifier.train()
 
     epoch = 1
+    plot_decoder_scatter(decoder, experiment_directory, epoch) #plot initial decoder output
     start_train = time.time()
     pbar = tqdm.trange(epoch, specs["NumEpochs"] + 1, desc="Training", smoothing=0)
     for epoch in pbar:
@@ -171,7 +173,7 @@ def train_deep_sdf_gan(
             
             
 
-        
+
 
         for batch in range(batch_per_epoch):
             if classifier is not None:
@@ -299,7 +301,8 @@ def train_deep_sdf_gan(
     ws.save_latest(epoch, experiment_directory, decoder, "latest.pth",None, GAN = GAN_architecture)
     plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture, snapshot_epochs = snapshot_epochs)
     plot_decoder_evolution(experiment_directory, snapshot_epochs)
-    plot_decoder_latent_effect(experiment_directory)  
+    plot_decoder_latent_effect(experiment_directory)
+    plot_decoder_scatter(decoder, experiment_directory, epoch)
             
 def save_snapshot(epoch, experiment_directory, decoder):
     ws.save_model(experiment_directory, "SnapshotE-" + str(epoch) + ".pth", decoder, epoch)

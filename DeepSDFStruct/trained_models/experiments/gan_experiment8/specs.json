@@ -1,6 +1,6 @@
 {
-    "Description" : "Rerunning test_experiment_23 to get some info on training collapse due to bad initial decoder initialization",
-    "RunFeatures" : "",
+    "Description" : "Mass study on how random meshgrid sampling affects latent conditioning of decoder",
+    "RunFeatures" : "Test run with random meshgrid offset",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
     "TestSplit": "splits/cross.json",
