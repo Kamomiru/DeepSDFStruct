@@ -103,7 +103,7 @@ def train_deep_sdf_gan(
 
     #Data Generation/Sampling
     real_sdf = CrossMsSDF(0.0)
-    sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device, add_latent = UseClassifier)
+    sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device, add_latent = UseClassifier, rnd_mesh_offset= specs["RandomMeshgridOffset"])
 
     #Training stat logging
     loss_log_D = []

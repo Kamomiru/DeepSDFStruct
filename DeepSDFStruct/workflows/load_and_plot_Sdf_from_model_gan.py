@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     #---------------MODEL LOADING---------------
     device = torch.device("cpu")
-    path = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/gan_experiment3"
+    path = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/gan_experiment7"
 
 
     decoder = load_trained_model(path, "latest", device)
@@ -80,4 +80,4 @@ if __name__ == "__main__":
 
     fig2.colorbar(sc, ax=ax2, label="Value")
 
-    plt.savefig("C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/workflows/scatter.png")
+    plt.savefig(path + "/decoderScatterPlot.png")
