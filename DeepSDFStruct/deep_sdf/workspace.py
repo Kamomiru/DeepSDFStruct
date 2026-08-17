@@ -305,7 +305,7 @@ def load_trained_model(
     with open(specs_filename, "r", encoding="utf-8") as f:
         experiment_specs = json.load(f)
     if device is None:
-        device = get_default_device(device)
+        device = get_default_device()
 
     filename = os.path.join(
         experiment_directory, model_params_subdir, checkpoint + ".pth"

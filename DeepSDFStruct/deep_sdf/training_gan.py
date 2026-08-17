@@ -134,6 +134,8 @@ def train_deep_sdf_gan(
     epoch_loss_G_cla: float = 0.0
     alpha_loss = specs["ClassifierLossRatio"]
     lambda_relative: float = 1.0
+    latent_parameters: list = []
+    latent_parameters_fake: list = []
 
     #initialization
     if specs["UseClassifier"]:
@@ -197,7 +199,7 @@ def train_deep_sdf_gan(
 
                 optimizer_cla.zero_grad()
 
-                loss_C = torch.nn.functional.smooth_l1_loss(pred_latent_real, latent_parameters)
+                loss_C = torch.nn.functional.smooth_l1_loss(pred_latent_real, latent_parameters) #type: ignore
                 RMSE_error_C = torch.sqrt(torch.mean((pred_latent_real - latent_parameters) ** 2)) #Root Mean Square Error for classifier training
 
                 loss_C.backward()
@@ -211,7 +213,7 @@ def train_deep_sdf_gan(
             for i in range(specs["LearnRatio"]):
 
                 if classifier is not None:
-                    fake_batch, latent_parameters_fake = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                    fake_batch, latent_parameters_fake = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"]) #type: ignore
                 else:
                     fake_batch = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
                 
@@ -227,7 +229,7 @@ def train_deep_sdf_gan(
                     pred_latent_fake = classifier(fake_batch)
 
 
-                    loss_G_cla = torch.nn.functional.smooth_l1_loss(pred_latent_fake, latent_parameters_fake)
+                    loss_G_cla = torch.nn.functional.smooth_l1_loss(pred_latent_fake, latent_parameters_fake) #type:ignore
 
                     lambda_relative = calc_lambda_relative(loss_G_GAN, loss_G_cla, alpha_loss)
 

@@ -156,7 +156,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             show_plt = True
 
         # Flatten for easier indexing
-        ax = ax.flatten()
+        ax = ax.flatten() #type: ignore
 
 
         # --------------------
@@ -511,7 +511,7 @@ def plot_decoder_evolution(
         # Optional: label each row by epoch
         ax[i, 0].set_ylabel(f"Epoch {snapshot}")
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for suptitle
+    plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for subtitle #type: ignore
     plt.savefig(experiment_directory + "/DecoderTrainingPlot.png")
 
 def plot_decoder_latent_effect(
