@@ -1,17 +1,34 @@
-from DeepSDFStruct.deep_sdf.plotting import plot_decoder_set
-from DeepSDFStruct.deep_sdf.workspace import *
-from DeepSDFStruct.pretrained_models import get_model, PretrainedModels
-from matplotlib import pyplot as plt
+from DeepSDFStruct.sdf_primitives import CrossMsSDF
+from DeepSDFStruct.deep_sdf.plotting import *
+import matplotlib.pyplot as plt
 
-device = torch.device("cpu")
-path = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiment4"
-decoder = load_trained_model(path, "latest", device)
+SDF = CrossMsSDF(0.5)
 
-fig, ax = plt.subplots((3))
+radii = [0.1 * radius for radius in range(1, 10, 1)]
+print(radii)
 
-plot_decoder_set(path, decoder, ax)
+fig, axes = plt.subplots(
+    3,3,
+    figsize=(12, 12),
+    squeeze= False)
 
-plt.savefig("C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/workflows/plot.png")
+axes = axes.flatten()
+
+for radius, ax in zip(radii, axes):
+    SDF.setRadius(radius)
+    SDF.plot_slice(normal=(0,1,0), ax = ax)
+
+    # Add title to each subplot
+    ax.set_title(
+        f"Radius = {radius:.1f}",
+        fontsize=14,
+        pad=10
+    )
+
+fig.savefig("C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/workflows/testPlot.png")
+
+
+
 
 
 

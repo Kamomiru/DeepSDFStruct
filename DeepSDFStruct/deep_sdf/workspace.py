@@ -436,23 +436,28 @@ def save_logs_GAN(
         loss_log_G_cla,
         epoch
 ):
-    
+
+    logs = {
+        "epoch": epoch,
+        "loss_D": loss_log_D,
+        "loss_G": loss_log_G,
+        "lr_log_D": lr_log_D,
+        "lr_log_G": lr_log_G,
+        "avg_real_pred": avg_real_pred,
+        "avg_fake_pred": avg_fake_pred,
+        "pred_accuracy": pred_accuracy,
+    }
+
+    # Only add classifier-related logs if they contain data
+    if len(loss_log_C) > 0:
+        logs["loss_C"] = loss_log_C
+        logs["RMSE_error_log_C"] = RMSE_error_log_C
+        logs["lr_log_C"] = lr_log_C
+        logs["loss_G_GAN"] = loss_log_G_GAN
+        logs["loss_G_cla"] = loss_log_G_cla
+
     torch.save(
-        {
-            "epoch": epoch,
-            "loss_D": loss_log_D,
-            "loss_G": loss_log_G,
-            "lr_log_D": lr_log_D,            
-            "lr_log_G": lr_log_G,
-            "avg_real_pred": avg_real_pred,
-            "avg_fake_pred": avg_fake_pred,
-            "pred_accuracy": pred_accuracy,
-            "loss_C": loss_log_C,
-            "RMSE_error_log_C": RMSE_error_log_C,
-            "lr_log_C": lr_log_C, 
-            "loss_G_GAN": loss_log_G_GAN,
-            "loss_G_cla": loss_log_G_cla,
-        },
+        logs,
         os.path.join(experiment_directory, logs_filename)
     )
 

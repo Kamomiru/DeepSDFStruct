@@ -141,11 +141,18 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
         show_plt = False
 
         if ax is None:
-            fig, ax = plt.subplots(
-                3,
-                2,
-                figsize=(14, 8)
-            )
+            if "loss_G_GAN" in logs:
+                fig, ax = plt.subplots(
+                    3,
+                    2,
+                    figsize=(14, 8)
+                )
+            else:
+                fig, ax = plt.subplots(
+                    2,
+                    2,
+                    figsize=(14, 8)
+                )
             show_plt = True
 
         # Flatten for easier indexing
@@ -506,3 +513,34 @@ def plot_decoder_evolution(
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for suptitle
     plt.savefig(experiment_directory + "/DecoderTrainingPlot.png")
+
+def plot_decoder_latent_effect(
+    experiment_directory,
+    lat_vec_set = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    device = torch.device("cpu")
+):
+    decoder = load_trained_model(experiment_directory, "latest", device)
+    decoder.eval()
+
+    fig, axes = plt.subplots(
+            3, 3,
+            figsize=(12, 12),
+            squeeze=False
+        )
+
+    axes = axes.flatten()
+    
+    plot_decoder_set(
+        experiment_directory,
+        decoder,
+        axes,
+        lat_vec_set=lat_vec_set
+    )
+
+    # Add latent value as title to each subplot
+    for ax, latent_value in zip(axes, lat_vec_set):
+        ax.set_title(f"Latent vector = {latent_value}")
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(experiment_directory + "/LatestLatentEffect.png")

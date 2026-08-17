@@ -2,7 +2,7 @@ from DeepSDFStruct.deep_sdf.training_gan import train_deep_sdf_gan
 import torch
 import os
 
-experiment_name = "gan_experiment3"
+experiment_name = "gan_experiment6"
 
 test_experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/" + experiment_name
 experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/" + experiment_name

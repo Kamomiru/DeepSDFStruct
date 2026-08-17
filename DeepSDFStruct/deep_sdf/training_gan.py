@@ -172,7 +172,10 @@ def train_deep_sdf_gan(
         
 
         for batch in range(batch_per_epoch):
-            real_batch, fake_batch, latent_parameters = sampler.fetch_samples() #type: ignore
+            if classifier is not None:
+                real_batch, fake_batch, latent_parameters = sampler.fetch_samples() #type: ignore
+            else: 
+                real_batch, fake_batch = sampler.fetch_samples() #type: ignore
 
             #Train Discriminator
             real_scores = discriminator(real_batch)
@@ -207,7 +210,11 @@ def train_deep_sdf_gan(
             #Eventually turn off gradient calculation for discriminator here since they are not used -> eventual performance increase
             for i in range(specs["LearnRatio"]):
 
-                fake_batch, latent_parameters_fake = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                if classifier is not None:
+                    fake_batch, latent_parameters_fake = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                else:
+                    fake_batch = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
+                
                 fake_scores = discriminator(fake_batch) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
 
                 optimizer_dec.zero_grad()
@@ -284,11 +291,13 @@ def train_deep_sdf_gan(
         if epoch in snapshot_epochs:
             save_snapshot(epoch, experiment_directory, decoder)
 
+    #Store all Logs and create plots
     #logger class waere hier schon mal gut gewesen :/
     ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, loss_log_C, RMSE_error_log_C, lr_log_C, loss_log_G_GAN, loss_log_G_cla, epoch) # type: ignore
     ws.save_latest(epoch, experiment_directory, decoder, "latest.pth",None, GAN = GAN_architecture)
     plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture, snapshot_epochs = snapshot_epochs)
-    plot_decoder_evolution(experiment_directory, snapshot_epochs)     
+    plot_decoder_evolution(experiment_directory, snapshot_epochs)
+    plot_decoder_latent_effect(experiment_directory)  
             
 def save_snapshot(epoch, experiment_directory, decoder):
     ws.save_model(experiment_directory, "SnapshotE-" + str(epoch) + ".pth", decoder, epoch)
