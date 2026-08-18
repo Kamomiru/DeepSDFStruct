@@ -1,5 +1,5 @@
 {
-    "Description" : "Baseline for testing effect of decoder starting condition on training collapse",
+    "Description" : "Testing effect of decoder starting condition on training collapse. Testing if RandomMeshgridOffset has effect on collapse.",
     "RunFeatures" : "",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
@@ -57,7 +57,7 @@
     "CodeBound" : 1.0,
     "GANArchitecture" : true,
     "UseClassifier": true,
-    "RandomMeshgridOffset": true
+    "RandomMeshgridOffset": false
   }
   
 

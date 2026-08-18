@@ -14,6 +14,7 @@ from DeepSDFStruct.deep_sdf.GAN_helpers.gan_sampling import *
 from DeepSDFStruct.sdf_primitives import CrossMsSDF
 from DeepSDFStruct.deep_sdf.GAN_helpers.Hinge_GAN_loss import *
 from DeepSDFStruct.deep_sdf.plotting import *
+from DeepSDFStruct.deep_sdf.GAN_helpers.gan_training_helpers import *
 
 #----Open Variables----
 
@@ -84,7 +85,10 @@ def train_deep_sdf_gan(
     logger.info(f"training on {host_name} with {device_name}")
 
     #initialize decoder
-    decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
+    if specs["PretrainDecoder"]:
+        decoder, pretrain_loss = pretrain_decoder(experiment_directory, device= device)
+    else:
+        decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
     discriminator = ConvDiscriminator(disc_specs["n_nodes"], disc_specs["spectral_reg"]).to(device)
 
@@ -304,17 +308,3 @@ def train_deep_sdf_gan(
     plot_decoder_latent_effect(experiment_directory)
     plot_decoder_scatter(decoder, experiment_directory, epoch)
             
-def save_snapshot(epoch, experiment_directory, decoder):
-    ws.save_model(experiment_directory, "SnapshotE-" + str(epoch) + ".pth", decoder, epoch)
-
-def freeze_network(network, bool = True):
-    for param in network.parameters():
-        param.requires_grad = not bool
-
-def calc_lambda_relative(loss_GAN, loss_cla, alpha, eps=1e-8):
-    if alpha == None: #if alpha is set to None, dont apply a weight to the losses
-        return 1
-
-    lambda_relative = (loss_GAN.detach()/(loss_cla.detach() + eps)) * (alpha/(1-alpha))
-    #maybe also clamp lambda_relative?
-    return lambda_relative

@@ -450,7 +450,6 @@ def to_numpy(x):
     return np.asarray(x)
 
 def plot_decoder_set(
-    experiment_directory,
     decoder,
     ax,
     origin=(0,0,0),
@@ -465,7 +464,7 @@ def plot_decoder_set(
     )
 
     for i, lat_vec_val in enumerate(lat_vec_set):
-        sdf.set_latent_vec(torch.tensor([lat_vec_val]))
+        sdf.set_latent_vec(torch.tensor([lat_vec_val], device=device))
         sdf.plot_slice(origin, normal, ax=ax[i])
         ax[i].set_title(f"Latent Vector: {lat_vec_val}")
 
@@ -499,7 +498,6 @@ def plot_decoder_evolution(
         )
 
         plot_decoder_set(
-            experiment_directory,
             decoder,
             ax=ax[i],
             origin=origin,
@@ -531,7 +529,6 @@ def plot_decoder_latent_effect(
     axes = axes.flatten()
     
     plot_decoder_set(
-        experiment_directory,
         decoder,
         axes,
         lat_vec_set=lat_vec_set

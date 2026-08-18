@@ -1,6 +1,6 @@
 {
-    "Description" : "Mass study on how random meshgrid sampling affects latent conditioning of decoder",
-    "RunFeatures" : "Test run with random meshgrid offset",
+    "Description" : "Testing effect of decoder starting condition on training collapse. Testing if RandomMeshgridOffset has effect on collapse.",
+    "RunFeatures" : "",
     "NetworkArch" : "deep_sdf_decoder",
     "TrainSplit": "splits/cross.json",
     "TestSplit": "splits/cross.json",
@@ -22,14 +22,15 @@
       "spectral_reg": true
     },
     "CodeLength" : 1,
-    "NumEpochs" : 250,
-    "SnapshotFrequency" : 25,
+    "NumEpochs" : 80,
+    "SnapshotFrequency" : 10,
     "AdditionalSnapshots" : [],
     "InitialLearningRates" : {
         "decoder" : 0.01,
         "discriminator" : 0.0001,
         "classifier" : 0.0001
     },
+    "ClassifierLossRatio": 0.3,
     "LearningRateSchedule" : [
       {
         "Type" : "Step",
@@ -56,8 +57,7 @@
     "CodeBound" : 1.0,
     "GANArchitecture" : true,
     "UseClassifier": true,
-    "ClassifierLossRatio": 0.3,
-    "RandomMeshgridOffset": true
+    "RandomMeshgridOffset": false
   }
   
 

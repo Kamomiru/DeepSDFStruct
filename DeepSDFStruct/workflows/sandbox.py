@@ -1,33 +1,18 @@
-from DeepSDFStruct.sdf_primitives import CrossMsSDF
+from DeepSDFStruct.deep_sdf.GAN_helpers.gan_training_helpers import *
 from DeepSDFStruct.deep_sdf.plotting import *
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 
-SDF = CrossMsSDF(0.5)
+experiment_name = "gan_test_experiment26"
 
-radii = [0.1 * radius for radius in range(1, 10, 1)]
-print(radii)
+test_experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/" + experiment_name
 
-fig, axes = plt.subplots(
-    3,3,
-    figsize=(12, 12),
-    squeeze= False)
+decoder, pretrain_loss = pretrain_decoder(test_experiment_dir, device= "cuda")
 
-axes = axes.flatten()
+fig, ax = plt.subplots(1,3)
 
-for radius, ax in zip(radii, axes):
-    SDF.setRadius(radius)
-    SDF.plot_slice(normal=(0,1,0), ax = ax)
+plot_decoder_set(decoder, ax, device="cuda")
 
-    # Add title to each subplot
-    ax.set_title(
-        f"Radius = {radius:.1f}",
-        fontsize=14,
-        pad=10
-    )
-
-fig.savefig("C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/workflows/testPlot.png")
-
-
+plt.savefig(test_experiment_dir + "/pretrainedDecoder.png")
 
 
 
