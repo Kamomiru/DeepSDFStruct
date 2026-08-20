@@ -19,11 +19,11 @@ def freeze_network(network, bool = True):
     for param in network.parameters():
         param.requires_grad = not bool
 
-def calc_lambda_relative(loss_GAN, loss_cla, alpha, eps=1e-8):
+def calc_lambda_relative(loss_GAN, loss_aux, alpha, eps=1e-8):
     if alpha == None: #if alpha is set to None, dont apply a weight to the losses
         return 1
 
-    lambda_relative = abs((loss_GAN.detach()/(loss_cla.detach() + eps)) * (alpha/(1-alpha)))
+    lambda_relative = abs((loss_GAN.detach()/(loss_aux.detach() + eps)) * (alpha/(1-alpha)))
     #maybe also clamp lambda_relative?
     return lambda_relative
 
@@ -52,6 +52,21 @@ def pretrain_decoder(experiment_directory, warmup_latent=0.5, device=None):
         device = "cuda" if torch.cuda.is_available() else "cpu"
  
     specs = ws.load_experiment_specifications(experiment_directory)
+
+    # NOTE: this warmup only ever builds a 1-D latent (`[[warmup_latent]]`).
+    # Now that CodeLength can be > 1 (z + control code), that no longer
+    # matches the decoder's expected input width. Fails fast with a clear
+    # message rather than a confusing shape-mismatch error deep in the
+    # decoder's first Linear layer. Extending this to sample a full
+    # (z, c) latent -- e.g. random z + warmup_latent as c -- is still TODO.
+    if specs["CodeLength"] != 1:
+        raise NotImplementedError(
+            "pretrain_decoder currently only supports CodeLength == 1 (a single "
+            "scalar latent). It needs to be extended to build a full (z, c) latent "
+            "vector before it can be used with the InfoGAN-style multi-dimensional "
+            "latent setup."
+        )
+
     warmup_specs = specs["WarmupSpecs"]
     samples_per_iteration = warmup_specs["SamplesPerIteration"]
     lr = warmup_specs["LearningRate"]
@@ -127,7 +142,7 @@ def pretrain_decoder(experiment_directory, warmup_latent=0.5, device=None):
  
     ws.save_model(experiment_directory, "warmup.pth", decoder, num_iterations)
     fig, ax = plt.subplots(1,3)
-    plot_decoder_set(decoder, ax, device="cuda")
+    plot_decoder_set(decoder, ax, code_dim=1, latent_size=specs["CodeLength"], device="cuda")
     plt.savefig(experiment_directory + f"/pretrainedDecoder{warmup_quality}.png")
  
     return decoder, loss_log
@@ -141,12 +156,12 @@ def save_checkpoint_GAN(
     discriminator,
     optimizer_dec,
     optimizer_disc,
-    classifier=None,
-    optimizer_cla=None,
+    regressor=None,
+    optimizer_reg=None,
 ):
     """
     Save a full, resumable GAN checkpoint under `tag` (e.g. "latest" or
-    "SnapshotE-500"). Decoder, discriminator, (optional) classifier and their
+    "SnapshotE-500"). Decoder, discriminator, (optional) regressor and their
     optimizers are each written as separate files, following the existing
     ModelParameters / OptimizerParameters split used elsewhere in workspace.py.
     """
@@ -155,10 +170,10 @@ def save_checkpoint_GAN(
     ws.save_optimizer(experiment_directory, f"{tag}_optimizer_dec.pth", optimizer_dec, epoch)
     ws.save_optimizer(experiment_directory, f"{tag}_optimizer_disc.pth", optimizer_disc, epoch)
  
-    if classifier is not None:
-        ws.save_model(experiment_directory, f"{tag}_cla.pth", classifier, epoch)
-    if optimizer_cla is not None:
-        ws.save_optimizer(experiment_directory, f"{tag}_optimizer_cla.pth", optimizer_cla, epoch)
+    if regressor is not None:
+        ws.save_model(experiment_directory, f"{tag}_reg.pth", regressor, epoch)
+    if optimizer_reg is not None:
+        ws.save_optimizer(experiment_directory, f"{tag}_optimizer_reg.pth", optimizer_reg, epoch)
  
  
 def load_checkpoint_GAN(
@@ -169,12 +184,12 @@ def load_checkpoint_GAN(
     optimizer_dec,
     optimizer_disc,
     device,
-    classifier=None,
-    optimizer_cla=None,
+    regressor=None,
+    optimizer_reg=None,
 ):
     """
     Load a full GAN checkpoint saved under `tag`, in-place, into the given
-    decoder/discriminator/(classifier)/optimizers. Returns the epoch the
+    decoder/discriminator/(regressor)/optimizers. Returns the epoch the
     checkpoint was saved at (i.e. the last *completed* epoch of that run).
     """
     epoch = ws.load_model_parameters(experiment_directory, tag, decoder, device)
@@ -182,10 +197,10 @@ def load_checkpoint_GAN(
     ws.load_optimizer(experiment_directory, f"{tag}_optimizer_dec", optimizer_dec, device)
     ws.load_optimizer(experiment_directory, f"{tag}_optimizer_disc", optimizer_disc, device)
  
-    if classifier is not None:
-        ws.load_model_parameters(experiment_directory, f"{tag}_cla", classifier, device)
-    if optimizer_cla is not None:
-        ws.load_optimizer(experiment_directory, f"{tag}_optimizer_cla", optimizer_cla, device)
+    if regressor is not None:
+        ws.load_model_parameters(experiment_directory, f"{tag}_reg", regressor, device)
+    if optimizer_reg is not None:
+        ws.load_optimizer(experiment_directory, f"{tag}_optimizer_reg", optimizer_reg, device)
  
     return epoch
  
@@ -194,19 +209,26 @@ def load_previous_logs_GAN(experiment_directory):
     """
     Load previously saved GAN logs (Logs.pth) into a dict of plain lists, so
     a continued run can extend them and later plots show the full history.
-    Classifier-related logs default to empty lists if the previous run didn't
-    use a classifier.
+    Regressor-related logs default to empty lists if the previous run didn't
+    use a regressor.
+
+    NOTE: logs from an old classifier-based run (with a "loss_C" key) will
+    fall through to the plain-GAN branch here -- their classifier data isn't
+    carried over. This is expected: since CodeLength changes for the
+    InfoGAN-style setup, an old classifier-run's decoder checkpoint isn't
+    loadable into the new architecture anyway (shape mismatch on the first
+    layer), so continuing training from such a run isn't meaningful regardless.
     """
     logs = ws.load_logs(experiment_directory)
  
-    if len(logs) == 13:
+    if len(logs) == 12:
         (
             loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy,
-            loss_C, rmse_C, lr_C, loss_G_GAN, loss_G_cla, _epoch,
+            rmse_R, lr_R, loss_G_GAN, loss_G_reg, _epoch,
         ) = logs
     else:
         (loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy, _epoch) = logs
-        loss_C, rmse_C, lr_C, loss_G_GAN, loss_G_cla = [], [], [], [], []
+        rmse_R, lr_R, loss_G_GAN, loss_G_reg = [], [], [], []
  
     return {
         "loss_log_D": loss_D,
@@ -216,11 +238,10 @@ def load_previous_logs_GAN(experiment_directory):
         "disc_avg_real_log": avg_real,
         "disc_avg_fake_log": avg_fake,
         "disc_pred_accuracy_log": accuracy,
-        "loss_log_C": loss_C,
-        "RMSE_error_log_C": rmse_C,
-        "lr_log_C": lr_C,
+        "RMSE_error_log_R": rmse_R,
+        "lr_log_R": lr_R,
         "loss_log_G_GAN": loss_G_GAN,
-        "loss_log_G_cla": loss_G_cla,
+        "loss_log_G_reg": loss_G_reg,
     }
 
 def get_lr_single(schedule, epoch):
@@ -261,19 +282,19 @@ def get_lr_all(specs, epoch):
     lr_G = get_lr_single(lr_schedules["Generator"], epoch)
     lr_D = get_lr_single(lr_schedules["Discriminator"], epoch)
 
-    lr_C = None
-    if specs["UseClassifier"]:
-        lr_C = get_lr_single(lr_schedules["Classifier"], epoch)
+    lr_R = None
+    if specs["UseRegressor"]:
+        lr_R = get_lr_single(lr_schedules["Regressor"], epoch)
 
-    return lr_G, lr_D, lr_C
+    return lr_G, lr_D, lr_R
 
-def update_lr(opt_G, opt_D, opt_C, specs, epoch):
+def update_lr(opt_G, opt_D, opt_R, specs, epoch):
 
-    lr_G, lr_D, lr_C = get_lr_all(specs, epoch)
+    lr_G, lr_D, lr_R = get_lr_all(specs, epoch)
 
     opt_G.param_groups[0]["lr"] = lr_G
     opt_D.param_groups[0]["lr"] = lr_D
-    if opt_C is not None:
-        opt_C.param_groups[0]["lr"] = lr_C
+    if opt_R is not None:
+        opt_R.param_groups[0]["lr"] = lr_R
 
-    return lr_G, lr_D, lr_C
+    return lr_G, lr_D, lr_R

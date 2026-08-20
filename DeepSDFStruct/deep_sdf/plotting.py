@@ -229,27 +229,27 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             )
 
 
-        # Generator classifier component
-        if "loss_G_cla" in logs:
+        # Generator regressor component
+        if "loss_G_reg" in logs:
 
             ax[0].plot(
                 np.arange(num_iters) / iters_per_epoch,
-                logs["loss_G_cla"],
+                logs["loss_G_reg"],
                 color="#6FA8DC",
                 alpha=0.6,
                 linewidth=1,
                 label="_nolegend_",
             )
 
-            smoothed_loss_G_cla = running_mean(logs["loss_G_cla"], 41)
+            smoothed_loss_G_reg = running_mean(logs["loss_G_reg"], 41)
 
             ax[0].plot(
                 np.arange(20, num_iters - 20) / iters_per_epoch,
-                smoothed_loss_G_cla,
+                smoothed_loss_G_reg,
                 color="#6FA8DC",
                 linewidth=1.8,
                 linestyle="--",
-                label="G CLA",
+                label="G Reg",
             )
 
         ax[0].set_yscale("log")
@@ -281,10 +281,10 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             label="Generator LR"
         )
 
-        if "lr_log_C" in logs:
+        if "lr_log_R" in logs:
             ax[1].plot(
-                logs["lr_log_C"],
-                label="Classifier LR",
+                logs["lr_log_R"],
+                label="Regressor LR",
                 color = "#6c3483"
             )
 
@@ -344,50 +344,56 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
 
         # --------------------
-        # Classifier std deviation (bottom left)
+        # Regressor RMSE (bottom left)
         # --------------------
-        if "RMSE_error_log_C" in logs:
+        if "RMSE_error_log_R" in logs:
             ax[4].plot(
-                logs["RMSE_error_log_C"],
-                label="Classifier RMSE Error"
+                logs["RMSE_error_log_R"],
+                label="Regressor RMSE Error"
             )
 
             ax[4].set(
                         xlabel="Epoch",
                         ylabel="RMSE Error",
-                        title="Classifier RMSE Error"
+                        title="Regressor RMSE Error"
                     )
 
             ax[4].legend()
 
 
         # --------------------
-        # Classifier Loss (bottom right)
+        # Regressor Loss detail (bottom right)
         # --------------------
-        if "loss_C" in logs:
+        # NOTE: this is the same loss_G_reg series already shown (combined
+        # with D/G/G_GAN) in ax[0] above -- unlike the old classifier, the
+        # regressor has no separate real-data loss to show here, since it's
+        # never trained on real data. Kept as a dedicated close-up panel
+        # since ax[0]'s shared log-scale view makes small changes in any one
+        # curve hard to read.
+        if "loss_G_reg" in logs:
 
             ax[5].plot(
                 np.arange(num_iters) / iters_per_epoch,
-                logs["loss_C"],
+                logs["loss_G_reg"],
                 color="#9b59b6",
                 alpha=0.6,
                 linewidth=1,
-                label="Classifier Loss",
+                label="Regressor Loss (G component)",
             )
 
-            smoothed_loss_C = running_mean(logs["loss_C"], 41)
+            smoothed_loss_G_reg_detail = running_mean(logs["loss_G_reg"], 41)
 
             ax[5].plot(
                 np.arange(20, num_iters - 20) / iters_per_epoch,
-                smoothed_loss_C,
+                smoothed_loss_G_reg_detail,
                 color="#6c3483",
                 linewidth=2,
-                label="Classifier Loss (Mean)",
+                label="Regressor Loss (Mean)",
             )
-            ax[4].set(
+            ax[5].set(
                 xlabel="Epoch",
-                ylabel="Classifier Loss",
-                title="Classifier Loss"
+                ylabel="Regressor Loss",
+                title="Regressor Loss (detail)"
             )
             ax[5].legend()
 
@@ -449,46 +455,95 @@ def to_numpy(x):
         return x.detach().cpu().numpy()
     return np.asarray(x)
 
+def _build_plot_latent(z_vec, code_val, code_dim, device):
+    """
+    Builds a full (z_dim + code_dim,) latent vector for the plotting
+    utilities below: z_vec is held fixed, and `code_val` is broadcast across
+    the code_dim positions.
+
+    NOTE: only meaningful for code_dim == 1 (a single scalar control code),
+    which is the convention this project currently uses everywhere else. For
+    code_dim > 1 this just repeats the same scalar across all code
+    positions -- fine for a quick look, but not a real per-dimension sweep.
+    """
+    code_vec = torch.full((code_dim,), float(code_val), device=device)
+    return torch.cat([z_vec, code_vec])
+
+
 def plot_decoder_set(
     decoder,
     ax,
     origin=(0,0,0),
     normal=(0,1,0),
-    lat_vec_set=[0.1,0.5,0.9],
+    code_vals=[0.1,0.5,0.9],
+    code_dim=1,
+    latent_size=None,
+    z_vec=None,
     device="cpu"
 ):
+    """
+    Plots one 2D cross-section slice per value in `code_vals`, sweeping the
+    InfoGAN control code c while holding the free noise z fixed (default:
+    an all-zero z, since z ~ N(0,1) -- 0 is the prior's mean/mode). With z
+    fixed, any variation you see across the panels is attributable to c
+    alone -- this is the diagnostic sweep for checking whether the decoder
+    actually learned to use c as a meaningful shape control.
+
+    `latent_size` (the decoder's total input width, i.e. specs["CodeLength"])
+    is only needed to size z when z_vec isn't passed explicitly -- this
+    function doesn't take experiment_directory, so it can't look CodeLength
+    up itself; callers with access to specs.json (plot_decoder_evolution,
+    plot_decoder_latent_effect) pass it through.
+    """
     decoder.eval()
 
+    if z_vec is None:
+        if latent_size is None:
+            raise ValueError(
+                "plot_decoder_set needs either z_vec or latent_size (the decoder's "
+                "total latent width, i.e. specs['CodeLength']) to size z."
+            )
+        z_dim = latent_size - code_dim
+        z_vec = torch.zeros(z_dim, device=device)
+    else:
+        z_vec = z_vec.to(device)
+
+    latent0 = _build_plot_latent(z_vec, code_vals[0], code_dim, device)
     sdf = SDFfromDeepSDF(
-        DeepSDFModel(decoder, torch.tensor([[lat_vec_set[0]]]), device)
+        DeepSDFModel(decoder, latent0.unsqueeze(0), device)
     )
 
-    for i, lat_vec_val in enumerate(lat_vec_set):
-        sdf.set_latent_vec(torch.tensor([lat_vec_val], device=device))
+    for i, code_val in enumerate(code_vals):
+        latent = _build_plot_latent(z_vec, code_val, code_dim, device)
+        sdf.set_latent_vec(latent)
         sdf.plot_slice(origin, normal, ax=ax[i])
-        ax[i].set_title(f"Latent Vector: {lat_vec_val}")
+        ax[i].set_title(f"c = {code_val}")
 
 def plot_decoder_evolution(
     experiment_directory,
     snapshot_epochs,
     origin=(0.0, 0.0, 0.0),
     normal=(0.0, 1.0, 0.0),
-    lat_vec_set=[0.1, 0.5, 0.9],
+    code_vals=[0.1, 0.5, 0.9],
     device="cpu"
 ):
+    specs = ws.load_experiment_specifications(experiment_directory)
+    code_dim = specs.get("ControlCodeDim", 1)
+    latent_size = specs["CodeLength"]
+
     fig, ax = plt.subplots(
         len(snapshot_epochs),
-        len(lat_vec_set),
+        len(code_vals),
         squeeze=False,
-        figsize=(4 * len(lat_vec_set), 4 * len(snapshot_epochs))
+        figsize=(4 * len(code_vals), 4 * len(snapshot_epochs))
     )
 
     # General title
     fig.suptitle("Decoder Evolution", fontsize=16)
 
     # Column titles
-    for j, lat_vec in enumerate(lat_vec_set):
-        ax[0, j].set_title(f"Latent Vector = {lat_vec}")
+    for j, code_val in enumerate(code_vals):
+        ax[0, j].set_title(f"c = {code_val}")
 
     for i, snapshot in enumerate(snapshot_epochs):
         decoder = load_trained_model(
@@ -497,12 +552,18 @@ def plot_decoder_evolution(
             device
         )
 
+        # z is re-derived as zeros inside plot_decoder_set every call, so
+        # it's identical across snapshot rows automatically -- any
+        # differences you see row-to-row are the decoder's evolving
+        # response to c, not noise from a different z draw.
         plot_decoder_set(
             decoder,
             ax=ax[i],
             origin=origin,
             normal=normal,
-            lat_vec_set=lat_vec_set,
+            code_vals=code_vals,
+            code_dim=code_dim,
+            latent_size=latent_size,
             device=device
         )
 
@@ -515,9 +576,13 @@ def plot_decoder_evolution(
 def plot_decoder_latent_effect(
     experiment_directory,
     epoch,
-    lat_vec_set = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    code_vals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     device = torch.device("cpu")
 ):
+    specs = ws.load_experiment_specifications(experiment_directory)
+    code_dim = specs.get("ControlCodeDim", 1)
+    latent_size = specs["CodeLength"]
+
     decoder = load_trained_model(experiment_directory, "latest", device)
     decoder.eval()
 
@@ -532,12 +597,15 @@ def plot_decoder_latent_effect(
     plot_decoder_set(
         decoder,
         axes,
-        lat_vec_set=lat_vec_set
+        code_vals=code_vals,
+        code_dim=code_dim,
+        latent_size=latent_size,
+        device=device
     )
 
-    # Add latent value as title to each subplot
-    for ax, latent_value in zip(axes, lat_vec_set):
-        ax.set_title(f"Latent vector = {latent_value}")
+    # Add control-code value as title to each subplot
+    for ax, code_val in zip(axes, code_vals):
+        ax.set_title(f"c = {code_val}")
         ax.grid(True)
 
     plt.tight_layout()
@@ -548,6 +616,10 @@ def plot_decoder_scatter(
     experiment_directory,
     epoch,
     latent_vec=None,
+    code_dim=1,
+    code_value=0.5,
+    z_vec=None,
+    latent_size=None,
     ax=None,
     resolution=30,
     y_value=0.5,
@@ -555,13 +627,28 @@ def plot_decoder_scatter(
     # Get device from decoder
     device = next(decoder.parameters()).device
 
-    # Latent vector
+    # Latent vector: pass `latent_vec` directly to override with a specific
+    # full-width vector; otherwise one is built from a fixed (default-zero)
+    # z and `code_value` broadcast across code_dim, same convention as
+    # plot_decoder_set. `latent_size` sizes z when z_vec isn't given
+    # explicitly either -- if not passed, it's read from specs.json (needs
+    # experiment_directory for that).
     if latent_vec is None:
-        latent_vec = torch.tensor(
-            [[0.5]],
-            dtype=torch.float32,
-            device=device,
-        )
+        if z_vec is None:
+            if latent_size is None:
+                if experiment_directory is None:
+                    raise ValueError(
+                        "plot_decoder_scatter needs latent_vec, z_vec, or latent_size "
+                        "when experiment_directory isn't given -- there's no specs.json "
+                        "to read CodeLength from."
+                    )
+                specs = ws.load_experiment_specifications(experiment_directory)
+                latent_size = specs["CodeLength"]
+            z_dim = latent_size - code_dim
+            z_vec = torch.zeros(z_dim, device=device)
+        else:
+            z_vec = z_vec.to(device)
+        latent_vec = _build_plot_latent(z_vec, code_value, code_dim, device).unsqueeze(0)
     else:
         latent_vec = latent_vec.to(device)
 
@@ -634,6 +721,3 @@ def plot_decoder_scatter(
         fig.savefig(experiment_directory /f"decoderScatterPlot-E{epoch}.png",dpi=200,bbox_inches="tight")
 
     return fig, ax
-
-
-

@@ -9,7 +9,7 @@ import sys
 import DeepSDFStruct
 import DeepSDFStruct.deep_sdf.workspace as ws
 from DeepSDFStruct.deep_sdf.networks.deep_sdf_discriminator import ConvDiscriminator
-from DeepSDFStruct.deep_sdf.networks.deep_sdf_classifier import ConvClassifier
+from DeepSDFStruct.deep_sdf.networks.deep_sdf_regressor import ConvRegressor
 from DeepSDFStruct.deep_sdf.GAN_helpers.gan_sampling import *
 from DeepSDFStruct.sdf_primitives import CrossMsSDF
 from DeepSDFStruct.deep_sdf.GAN_helpers.Hinge_GAN_loss import *
@@ -65,7 +65,7 @@ def train_deep_sdf_gan(
     logger.info(f"Reading experiment configuration from {experiment_directory}")
     logger.info("Experiment description: \n" + specs["Description"])
     GAN_architecture = specs["GANArchitecture"]
-    UseClassifier = specs["UseClassifier"]
+    UseRegressor = specs["UseRegressor"]
 
     logger.debug(specs["NetworkSpecs"])
     
@@ -98,30 +98,41 @@ def train_deep_sdf_gan(
 
     #Data Generation/Sampling
     real_sdf = CrossMsSDF(0.0)
-    sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device, add_latent = UseClassifier, rnd_mesh_offset= specs["RandomMeshgridOffset"])
+
+    # InfoGAN-style latent split: CodeLength is the decoder's TOTAL latent
+    # width (z_dim + code_dim); ControlCodeDim is dim(c). z_dim is derived
+    # inside the sampler as CodeLength - ControlCodeDim.
+    code_dim = specs.get("ControlCodeDim", 1)
+    z_distribution = specs.get("ZDistribution", "normal")               # "normal" or "uniform"
+    code_bounds = tuple(specs.get("ControlCodeBounds", [-1.0, 1.0]))
+
+    sampler = ConvGAN_SDF_Sampler(
+        real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch,
+        specs["SdfParameterBounds"], device,
+        z_dim = specs["ZDim"], code_dim=code_dim,
+        z_distribution=z_distribution, code_bounds=code_bounds,
+        rnd_mesh_offset=specs["RandomMeshgridOffset"],
+    )
 
 
-    #OPTIONAL: initialize parameter classifier
+    #OPTIONAL: initialize regressor
     #type annotation so pylance does'nt constantly throw errors. Would work without this!
-    classifier: ConvClassifier | None = None
-    optimizer_cla: torch.optim.Optimizer | None = None
-    RMSE_error_C: torch.Tensor = torch.tensor(0.0)
-    epoch_loss_C: float = 0.0
+    regressor: ConvRegressor | None = None
+    optimizer_reg: torch.optim.Optimizer | None = None
+    RMSE_error_R: torch.Tensor = torch.tensor(0.0)
     epoch_loss_G_GAN: float = 0.0
-    epoch_loss_G_cla: float = 0.0
-    alpha_loss = specs["ClassifierLossRatio"]
+    epoch_loss_G_reg: float = 0.0
+    alpha_loss = specs.get("RegressorLossRatio") if UseRegressor else None
     lambda_relative: float = 1.0
-    latent_parameters: list = []
-    latent_parameters_fake: list = []
-
 
     #initialization
-    lr_C = get_lr_single(specs["LearningRateSchedule"]["Classifier"], epoch = 1)
-    if specs["UseClassifier"]:
-        classifier = ConvClassifier(disc_specs["n_nodes"], disc_specs["spectral_reg"], specs["CodeLength"]).to(device)
-        optimizer_cla = torch.optim.Adam(classifier.parameters(),
-                                         lr = lr_C)
-        classifier.train()
+    lr_R = None
+    if UseRegressor:
+        lr_R = get_lr_single(specs["LearningRateSchedule"]["Regressor"], epoch = 1)
+        regressor = ConvRegressor(disc_specs["n_nodes"], disc_specs["spectral_reg"], code_dim).to(device)
+        optimizer_reg = torch.optim.Adam(regressor.parameters(),
+                                         lr = lr_R)
+        regressor.train()
 
     #----Continuation Handling----
     is_continuing = continue_from is not None
@@ -144,7 +155,7 @@ def train_deep_sdf_gan(
         last_epoch = load_checkpoint_GAN(
             checkpoint_tag, experiment_directory, decoder, discriminator,
             optimizer_dec, optimizer_disc, device,
-            classifier=classifier, optimizer_cla=optimizer_cla,
+            regressor=regressor, optimizer_reg=optimizer_reg,
         )
 
         start_epoch = last_epoch + 1
@@ -175,11 +186,10 @@ def train_deep_sdf_gan(
         disc_avg_real_log = prev_logs["disc_avg_real_log"]
         disc_avg_fake_log = prev_logs["disc_avg_fake_log"]
         disc_pred_accuracy_log = prev_logs["disc_pred_accuracy_log"]
-        loss_log_C = prev_logs["loss_log_C"]
         loss_log_G_GAN = prev_logs["loss_log_G_GAN"]
-        loss_log_G_cla = prev_logs["loss_log_G_cla"]
-        lr_log_C = prev_logs["lr_log_C"]
-        RMSE_error_log_C = prev_logs["RMSE_error_log_C"]
+        loss_log_G_reg = prev_logs["loss_log_G_reg"]
+        lr_log_R = prev_logs["lr_log_R"]
+        RMSE_error_log_R = prev_logs["RMSE_error_log_R"]
     else:
         loss_log_D = []
         loss_log_G = []
@@ -188,11 +198,10 @@ def train_deep_sdf_gan(
         disc_avg_real_log = []
         disc_avg_fake_log = []
         disc_pred_accuracy_log = []
-        loss_log_C: list = []
         loss_log_G_GAN: list = []
-        loss_log_G_cla: list = []
-        lr_log_C: list = []
-        RMSE_error_log_C: list = []
+        loss_log_G_reg: list = []
+        lr_log_R: list = []
+        RMSE_error_log_R: list = []
 
 
     if not is_continuing:
@@ -208,34 +217,34 @@ def train_deep_sdf_gan(
         epoch_loss_D = 0.0
         epoch_loss_G = 0.0
         epoch_loss_G_GAN = 0.0
-        epoch_loss_G_cla = 0.0
+        epoch_loss_G_reg = 0.0
 
         total_real_score_D = 0.0
         total_fake_score_D = 0.0
 
         correct_disc_pred = 0.0
 
-        lr_G, lr_D, lr_C = update_lr(optimizer_dec, optimizer_disc, optimizer_dec, specs, epoch)
+        lr_G, lr_D, lr_R = update_lr(optimizer_dec, optimizer_disc, optimizer_reg, specs, epoch)
 
         
         lr_log_D.append(lr_D)
         lr_log_G.append(lr_G)
 
-        if classifier is not None:
-            epoch_loss_C = 0.0
-            lr_log_C.append(lr_C)
+        if regressor is not None:
+            lr_log_R.append(lr_R)
             
             
         #Batch loop
         for batch in range(batch_per_epoch):
-            if classifier is not None:
-                real_batch, fake_batch, latent_parameters = sampler.fetch_samples() #type: ignore
-            else: 
-                real_batch, fake_batch = sampler.fetch_samples() #type: ignore
+
+            sampler.resample_mesh_offset() #is only triggered if rnd_mesh_offset == True
+
+            real_batch = sampler.fetch_real_batch() #sample using sdf parameters (e.g. Radius for 3DCrossSDF)
+            fake_batch_d, _ = sampler.fetch_fake_batch() #sample using random latent vector. Consistin of [z, c]
 
             #Train Discriminator
             real_scores = discriminator(real_batch)
-            fake_scores_d = discriminator(fake_batch.detach()) #We need to detach the fake_batch so all our fake samples are treated as constant and our G gradients dont flow into our D gradient
+            fake_scores_d = discriminator(fake_batch_d.detach()) #We need to detach the fake_batch so all our fake samples are treated as constant and our G gradients dont flow into our D gradient
 
             optimizer_disc.zero_grad()
 
@@ -246,54 +255,39 @@ def train_deep_sdf_gan(
             
             epoch_loss_D += loss_D.item()
 
-            #Train Classifier
-            if classifier is not None and optimizer_cla is not None:
-                freeze_network(classifier, False)
-                pred_latent_real = classifier(real_batch)
-
-                optimizer_cla.zero_grad()
-
-                loss_C = torch.nn.functional.smooth_l1_loss(pred_latent_real, latent_parameters) #type: ignore
-                RMSE_error_C = torch.sqrt(torch.mean((pred_latent_real - latent_parameters) ** 2)) #Root Mean Square Error for classifier training
-
-                loss_C.backward()
-
-                optimizer_cla.step()
-
-                epoch_loss_C += loss_C.item()
-
-            #Train Generator
+            #Train Generator + Regressor
             #Eventually turn off gradient calculation for discriminator here since they are not used -> eventual performance increase
             #Tested but no noteworthy performance increase for current setup
             for i in range(specs["LearnRatio"]):
 
-                if classifier is not None:
-                    fake_batch, latent_parameters_fake = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"]) #type: ignore
-                else:
-                    fake_batch = sampler.fetch_samples(fake_only = True, decoder_clamp_val = specs["DecoderClampValue"])
-                
+                #Only Discriminator Loss
+                sampler.resample_mesh_offset()
+
+                fake_batch, sampled_codes = sampler.fetch_fake_batch(decoder_clamp_val = specs["DecoderClampValue"])
+
                 fake_scores = discriminator(fake_batch) #Here we are not allowed to detach() since we need those gradients to train the generator/decoder.
 
                 optimizer_dec.zero_grad()
-
+                    
                 loss_G_GAN = Hinge_Loss_G(fake_scores)
 
-                #additional classifier loss
-                if classifier is not None:
-                    freeze_network(classifier) #type: ignore
-                    pred_latent_fake = classifier(fake_batch)
+                #additional regressor loss
+                if regressor is not None:
+                    optimizer_reg.zero_grad()
+                    
+                    pred_codes = regressor(fake_batch).view(-1, code_dim) #view() guards against ConvClassifier's inherited squeeze(-1) collapsing the code_dim==1 case to a 1-D tensor
+
+                    loss_G_reg = torch.nn.functional.smooth_l1_loss(pred_codes, sampled_codes)
+                    RMSE_error_R = torch.sqrt(torch.mean((pred_codes - sampled_codes) ** 2))
+
+                    lambda_relative = calc_lambda_relative(loss_G_GAN, loss_G_reg, alpha_loss)
+
+                    loss_G_reg = loss_G_reg * lambda_relative
+
+                    loss_G = loss_G_GAN + loss_G_reg
 
 
-                    loss_G_cla = torch.nn.functional.smooth_l1_loss(pred_latent_fake, latent_parameters_fake) #type:ignore
-
-                    lambda_relative = calc_lambda_relative(loss_G_GAN, loss_G_cla, alpha_loss)
-
-                    loss_G_cla *= lambda_relative
-
-                    loss_G = loss_G_GAN + loss_G_cla
-
-
-                    epoch_loss_G_cla += loss_G_cla.item()
+                    epoch_loss_G_reg += loss_G_reg.item()
                 else:
                     loss_G = loss_G_GAN
 
@@ -302,6 +296,8 @@ def train_deep_sdf_gan(
                 loss_G.backward()
 
                 optimizer_dec.step()
+                if regressor is not None:
+                    optimizer_reg.step()
 
                 epoch_loss_G += loss_G.item()
 
@@ -315,7 +311,7 @@ def train_deep_sdf_gan(
         if specs["LearnRatio"] > 1:
             epoch_loss_G /= specs["LearnRatio"]
             epoch_loss_G_GAN /= specs["LearnRatio"]
-            epoch_loss_G_cla /= specs["LearnRatio"]
+            epoch_loss_G_reg /= specs["LearnRatio"]
         
         #--------Logging--------
         avg_real_pred = total_real_score_D/samples_per_epoch_D
@@ -331,34 +327,34 @@ def train_deep_sdf_gan(
 
         
 
-        #classifier logging
-        if classifier is not None:
-            loss_log_C.append(epoch_loss_C)
-            RMSE_error_log_C.append(RMSE_error_C.item())
-            loss_log_G_cla.append(epoch_loss_G_cla)
+        #regressor logging
+        if regressor is not None:
+            RMSE_error_log_R.append(RMSE_error_R.item())
+            loss_log_G_reg.append(epoch_loss_G_reg)
             loss_log_G_GAN.append(epoch_loss_G_GAN)
             
 
 
         
 
-        logger.info(f"Epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G} | C = {epoch_loss_C}")
-        logger.info(f"Partial Generator loss is: G_GAN = {epoch_loss_G_GAN} | G_cla = {epoch_loss_G_cla} (λrel={lambda_relative})")
+        logger.info(f"Epoch loss is: D = {epoch_loss_D} | G = {epoch_loss_G}")
+        logger.info(f"Partial Generator loss is: G_GAN = {epoch_loss_G_GAN} | G_reg = {epoch_loss_G_reg} (λrel={lambda_relative})")
         logger.info(f"Avg. Discriminator predictions: real = {avg_real_pred} | fake = {avg_fake_pred} | Accuracy = {pred_accuracy}%" )
-        logger.info(f"Classifier Metrics: RMSE = {RMSE_error_C}")
+        if regressor is not None:
+            logger.info(f"Regressor Metrics: RMSE = {RMSE_error_R}")
     
         if epoch in snapshot_epochs:
             save_checkpoint_GAN(
                 f"SnapshotE-{epoch}", epoch, experiment_directory, decoder, discriminator,
-                optimizer_dec, optimizer_disc, classifier=classifier, optimizer_cla=optimizer_cla,
+                optimizer_dec, optimizer_disc, regressor=regressor, optimizer_reg=optimizer_reg,
             )
 
     #Store all Logs and create plots
     #logger class waere hier schon mal gut gewesen :/
-    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, loss_log_C, RMSE_error_log_C, lr_log_C, loss_log_G_GAN, loss_log_G_cla, epoch) # type: ignore
+    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, RMSE_error_log_R, lr_log_R, loss_log_G_GAN, loss_log_G_reg, epoch) # type: ignore
     save_checkpoint_GAN(
         "latest", epoch, experiment_directory, decoder, discriminator,
-        optimizer_dec, optimizer_disc, classifier=classifier, optimizer_cla=optimizer_cla,
+        optimizer_dec, optimizer_disc, regressor=regressor, optimizer_reg=optimizer_reg,
     )
 
     #Persist the epoch count so a future continue_from call knows where this run left off
@@ -369,4 +365,3 @@ def train_deep_sdf_gan(
     plot_decoder_evolution(experiment_directory, snapshot_epochs)
     plot_decoder_latent_effect(experiment_directory, epoch)
     plot_decoder_scatter(decoder, experiment_directory, epoch)
-            

@@ -439,11 +439,10 @@ def save_logs_GAN(
         avg_real_pred,
         avg_fake_pred,
         pred_accuracy,
-        loss_log_C,
-        RMSE_error_log_C,
-        lr_log_C,
+        RMSE_error_log_R,
+        lr_log_R,
         loss_log_G_GAN,
-        loss_log_G_cla,
+        loss_log_G_reg,
         epoch
 ):
 
@@ -458,13 +457,12 @@ def save_logs_GAN(
         "pred_accuracy": pred_accuracy,
     }
 
-    # Only add classifier-related logs if they contain data
-    if len(loss_log_C) > 0:
-        logs["loss_C"] = loss_log_C
-        logs["RMSE_error_log_C"] = RMSE_error_log_C
-        logs["lr_log_C"] = lr_log_C
+    # Only add regressor-related logs if they contain data.
+    if len(loss_log_G_reg) > 0:
+        logs["RMSE_error_log_R"] = RMSE_error_log_R
+        logs["lr_log_R"] = lr_log_R
         logs["loss_G_GAN"] = loss_log_G_GAN
-        logs["loss_G_cla"] = loss_log_G_cla
+        logs["loss_G_reg"] = loss_log_G_reg
 
     torch.save(
         logs,
@@ -484,8 +482,8 @@ def load_logs(experiment_directory):
     #GAN Logs
     if "loss_D" in data:
 
-        # GAN + Classifier
-        if "loss_C" in data:
+        # GAN + Regressor
+        if "loss_G_reg" in data:
             return (
                 data["loss_D"],
                 data["loss_G"],
@@ -494,15 +492,14 @@ def load_logs(experiment_directory):
                 data["avg_real_pred"],
                 data["avg_fake_pred"],
                 data["pred_accuracy"],
-                data["loss_C"],
-                data["RMSE_error_log_C"],
-                data["lr_log_C"],
+                data["RMSE_error_log_R"],
+                data["lr_log_R"],
                 data["loss_G_GAN"],
-                data["loss_G_cla"],
+                data["loss_G_reg"],
                 data["epoch"],
             )
 
-        # GAN without Classifier
+        # GAN without Regressor 
         return (
             data["loss_D"],
             data["loss_G"],
@@ -523,5 +520,3 @@ def load_logs(experiment_directory):
         data["param_magnitude"],
         data["epoch"],
     )
-
-

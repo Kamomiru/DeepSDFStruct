@@ -1,17 +1,18 @@
 """
-SDF Classifier
-Classifies the decoders output SDF and attempts to predict the decoders input parameters.
+SDF Regressor
+Attempts to reconstruct a randomly sampled latent code.
+This is supposed condition the decoder with that latent code and hence create not just one SDF but multiple.
 """
 
 import torch.nn as nn
 import torch
 import math
 
-class ConvClassifier(nn.Module):
-    def __init__(self, n_nodes, spectral_reg, conditioning_dim):
-        super(ConvClassifier, self).__init__()
+class ConvRegressor(nn.Module):
+    def __init__(self, n_nodes, spectral_reg, code_dim):
+        super(ConvRegressor, self).__init__()
         self.spectral_reg = spectral_reg
-        self.conditioning_dim = conditioning_dim
+        self.code_dim = code_dim
 
         if n_nodes not in [4, 8, 16, 32, 64]:
             raise RuntimeError("n_nodes must be 4, 8, 16, 32 or 64!")
@@ -49,7 +50,7 @@ class ConvClassifier(nn.Module):
         self.net = nn.Sequential(*layers)
 
         #implement larger network after convolutional layers?
-        self.lin = nn.Linear(in_chanels, conditioning_dim)
+        self.lin = nn.Linear(in_chanels, code_dim)
 
     def forward(self, x):
         x = self.net(x)
