@@ -514,6 +514,7 @@ def plot_decoder_evolution(
 
 def plot_decoder_latent_effect(
     experiment_directory,
+    epoch,
     lat_vec_set = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     device = torch.device("cpu")
 ):
@@ -540,7 +541,7 @@ def plot_decoder_latent_effect(
         ax.grid(True)
 
     plt.tight_layout()
-    plt.savefig(str(experiment_directory) + "/LatestLatentEffect.png")
+    plt.savefig(str(experiment_directory) + f"/LatentEffect-E{epoch}.png")
 
 def plot_decoder_scatter(
     decoder,

@@ -131,3 +131,149 @@ def pretrain_decoder(experiment_directory, warmup_latent=0.5, device=None):
     plt.savefig(experiment_directory + f"/pretrainedDecoder{warmup_quality}.png")
  
     return decoder, loss_log
+
+
+def save_checkpoint_GAN(
+    tag,
+    epoch,
+    experiment_directory,
+    decoder,
+    discriminator,
+    optimizer_dec,
+    optimizer_disc,
+    classifier=None,
+    optimizer_cla=None,
+):
+    """
+    Save a full, resumable GAN checkpoint under `tag` (e.g. "latest" or
+    "SnapshotE-500"). Decoder, discriminator, (optional) classifier and their
+    optimizers are each written as separate files, following the existing
+    ModelParameters / OptimizerParameters split used elsewhere in workspace.py.
+    """
+    ws.save_model(experiment_directory, f"{tag}.pth", decoder, epoch)
+    ws.save_model(experiment_directory, f"{tag}_disc.pth", discriminator, epoch)
+    ws.save_optimizer(experiment_directory, f"{tag}_optimizer_dec.pth", optimizer_dec, epoch)
+    ws.save_optimizer(experiment_directory, f"{tag}_optimizer_disc.pth", optimizer_disc, epoch)
+ 
+    if classifier is not None:
+        ws.save_model(experiment_directory, f"{tag}_cla.pth", classifier, epoch)
+    if optimizer_cla is not None:
+        ws.save_optimizer(experiment_directory, f"{tag}_optimizer_cla.pth", optimizer_cla, epoch)
+ 
+ 
+def load_checkpoint_GAN(
+    tag,
+    experiment_directory,
+    decoder,
+    discriminator,
+    optimizer_dec,
+    optimizer_disc,
+    device,
+    classifier=None,
+    optimizer_cla=None,
+):
+    """
+    Load a full GAN checkpoint saved under `tag`, in-place, into the given
+    decoder/discriminator/(classifier)/optimizers. Returns the epoch the
+    checkpoint was saved at (i.e. the last *completed* epoch of that run).
+    """
+    epoch = ws.load_model_parameters(experiment_directory, tag, decoder, device)
+    ws.load_model_parameters(experiment_directory, f"{tag}_disc", discriminator, device)
+    ws.load_optimizer(experiment_directory, f"{tag}_optimizer_dec", optimizer_dec, device)
+    ws.load_optimizer(experiment_directory, f"{tag}_optimizer_disc", optimizer_disc, device)
+ 
+    if classifier is not None:
+        ws.load_model_parameters(experiment_directory, f"{tag}_cla", classifier, device)
+    if optimizer_cla is not None:
+        ws.load_optimizer(experiment_directory, f"{tag}_optimizer_cla", optimizer_cla, device)
+ 
+    return epoch
+ 
+ 
+def load_previous_logs_GAN(experiment_directory):
+    """
+    Load previously saved GAN logs (Logs.pth) into a dict of plain lists, so
+    a continued run can extend them and later plots show the full history.
+    Classifier-related logs default to empty lists if the previous run didn't
+    use a classifier.
+    """
+    logs = ws.load_logs(experiment_directory)
+ 
+    if len(logs) == 13:
+        (
+            loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy,
+            loss_C, rmse_C, lr_C, loss_G_GAN, loss_G_cla, _epoch,
+        ) = logs
+    else:
+        (loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy, _epoch) = logs
+        loss_C, rmse_C, lr_C, loss_G_GAN, loss_G_cla = [], [], [], [], []
+ 
+    return {
+        "loss_log_D": loss_D,
+        "loss_log_G": loss_G,
+        "lr_log_D": lr_D,
+        "lr_log_G": lr_G,
+        "disc_avg_real_log": avg_real,
+        "disc_avg_fake_log": avg_fake,
+        "disc_pred_accuracy_log": accuracy,
+        "loss_log_C": loss_C,
+        "RMSE_error_log_C": rmse_C,
+        "lr_log_C": lr_C,
+        "loss_log_G_GAN": loss_G_GAN,
+        "loss_log_G_cla": loss_G_cla,
+    }
+
+def get_lr_single(schedule, epoch):
+    schedule_type = schedule["Type"]
+    lr = 0.0
+    if schedule_type == "Constant":
+        lr = schedule["InitialLr"]
+        return lr
+    elif schedule_type == "FactorStep":
+        lr = schedule["InitialLr"] * (schedule["Factor"] ** (epoch // schedule["Interval"]))
+        return lr
+    elif schedule_type == "ConstantStep":
+        raise NotImplementedError(f"ConstantStep Lr schedule not implemented yet!")
+    elif schedule_type == "Custom":
+        entries = schedule["Schedule"]
+
+        if not entries:
+            raise ValueError("Custom LR schedule cannot be empty.")
+
+        # Find the most recent entry whose epoch <= current epoch
+        lr = entries[0]["lr"] #first initial Lr
+
+        for entry in entries:
+            if epoch >= entry["epoch"]:
+                lr = entry["lr"]
+            else: #stop updating lr if epoch is not >= current epoch
+                break
+
+        return lr
+
+    else:
+        raise ValueError(f"Unknown LR schedule type: {schedule_type}")
+
+
+def get_lr_all(specs, epoch):
+    lr_schedules = specs["LearningRateSchedule"]
+
+    lr_G = get_lr_single(lr_schedules["Generator"], epoch)
+    lr_D = get_lr_single(lr_schedules["Discriminator"], epoch)
+
+    lr_C = None
+    if specs["UseClassifier"]:
+        lr_C = get_lr_single(lr_schedules["Classifier"], epoch)
+
+    return lr_G, lr_D, lr_C
+
+def update_lr(opt_G, opt_D, opt_C, specs, epoch):
+
+    lr_G, lr_D, lr_C = get_lr_all(specs, epoch)
+
+    opt_G.param_groups[0]["lr"] = lr_G
+    opt_D.param_groups[0]["lr"] = lr_D
+    if opt_C is not None:
+        opt_C.param_groups[0]["lr"] = lr_C
+
+    return lr_G, lr_D, lr_C

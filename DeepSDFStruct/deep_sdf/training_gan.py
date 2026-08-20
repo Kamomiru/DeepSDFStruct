@@ -25,7 +25,7 @@ logger = logging.getLogger(DeepSDFStruct.__name__)
 #logger.setLevel(logging.DEBUG)
 
 def train_deep_sdf_gan(
-    experiment_directory, continue_from=None, batch_split=1, device=None
+    experiment_directory, continue_from=None, device=None
 ):
     experiment_directory = str(experiment_directory) #convert shutil path into str if passed
     #----Compute Device Checking----
@@ -42,7 +42,7 @@ def train_deep_sdf_gan(
 
 
     #check if experiment has already been run before
-    if os.path.isdir(experiment_directory + "/ModelParameters"):
+    if continue_from is None and os.path.isdir(experiment_directory + "/ModelParameters"):
         while True:
             answer = input(
                 "The network has already been trained. "
@@ -67,36 +67,26 @@ def train_deep_sdf_gan(
     GAN_architecture = specs["GANArchitecture"]
     UseClassifier = specs["UseClassifier"]
 
-    #Determine decoder snapshot epochs
-    snapshot_epochs = list(range(specs["SnapshotFrequency"],specs["NumEpochs"] + 1,specs["SnapshotFrequency"]))
-    snapshot_epochs += specs["AdditionalSnapshots"]
-    snapshot_epochs.sort()
-
     logger.debug(specs["NetworkSpecs"])
-
-    if device == "cuda":
-        device_name = torch.cuda.get_device_name()
-    elif device == "cpu":
-        device_name = "cpu"
-    else:
-        raise RuntimeError("Device must be either cpu or cuda")
     
     host_name = socket.gethostname()
     logger.info(f"training on {host_name} with {device_name}")
 
     #initialize decoder
-    if specs["PretrainDecoder"]:
-        decoder, pretrain_loss = pretrain_decoder(experiment_directory, device= device)
-    else:
-        decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
+    decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
     #initialize discriminator
     discriminator = ConvDiscriminator(disc_specs["n_nodes"], disc_specs["spectral_reg"]).to(device)
 
+    decoder.train()
+    discriminator.train()
+
     #initialize optimizers
+    lr_G = get_lr_single(specs["LearningRateSchedule"]["Generator"], epoch = 1)
+    lr_D = get_lr_single(specs["LearningRateSchedule"]["Discriminator"], epoch = 1)
     optimizer_dec = torch.optim.Adam(decoder.parameters(),
-                                      lr = specs["InitialLearningRates"]["decoder"])
+                                      lr = lr_G)
     optimizer_disc = torch.optim.Adam(discriminator.parameters(),
-                                      lr = specs["InitialLearningRates"]["discriminator"])
+                                      lr = lr_D)
 
     #Batch size Variables and checking
     samples_per_batch = specs["SamplesPerBatch"]
@@ -110,30 +100,12 @@ def train_deep_sdf_gan(
     real_sdf = CrossMsSDF(0.0)
     sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch, specs["SdfParameterBounds"], device, add_latent = UseClassifier, rnd_mesh_offset= specs["RandomMeshgridOffset"])
 
-    #Training stat logging
-    loss_log_D = []
-    loss_log_G = []
-    lr_log_D = []
-    lr_log_G = []
-
-
-    disc_avg_real_log = []
-    disc_avg_fake_log = []
-    disc_pred_accuracy_log = []
-
-    decoder.train()
-    discriminator.train()
 
     #OPTIONAL: initialize parameter classifier
     #type annotation so pylance does'nt constantly throw errors. Would work without this!
     classifier: ConvClassifier | None = None
     optimizer_cla: torch.optim.Optimizer | None = None
-    loss_log_C: list = []
-    loss_log_G_GAN: list = []
-    loss_log_G_cla: list = []
-    lr_log_C: list = []  
     RMSE_error_C: torch.Tensor = torch.tensor(0.0)
-    RMSE_error_log_C: list = []
     epoch_loss_C: float = 0.0
     epoch_loss_G_GAN: float = 0.0
     epoch_loss_G_cla: float = 0.0
@@ -142,17 +114,93 @@ def train_deep_sdf_gan(
     latent_parameters: list = []
     latent_parameters_fake: list = []
 
+
     #initialization
+    lr_C = get_lr_single(specs["LearningRateSchedule"]["Classifier"], epoch = 1)
     if specs["UseClassifier"]:
         classifier = ConvClassifier(disc_specs["n_nodes"], disc_specs["spectral_reg"], specs["CodeLength"]).to(device)
         optimizer_cla = torch.optim.Adam(classifier.parameters(),
-                                         lr = specs["InitialLearningRates"]["classifier"])
+                                         lr = lr_C)
         classifier.train()
 
-    epoch = 1
-    plot_decoder_scatter(decoder, experiment_directory, epoch) #plot initial decoder output
+    #----Continuation Handling----
+    is_continuing = continue_from is not None
+    prev_logs = None
+
+    if is_continuing:
+        if continue_from == "latest":
+            checkpoint_tag = "latest"
+        elif isinstance(continue_from, int) or (isinstance(continue_from, str) and continue_from.isdigit()): #checks whether continiue_From is an integer or a string that is only containing digits
+            checkpoint_tag = f"SnapshotE-{continue_from}"
+        else:
+            checkpoint_tag = str(continue_from)  # assume it's already a full checkpoint tag
+
+        if "AdditionalEpochs" not in specs:
+            raise KeyError(
+                'Continuing training requires an "AdditionalEpochs" entry in specs.json '
+                "(how many extra epochs to train from the checkpoint)."
+            )
+
+        last_epoch = load_checkpoint_GAN(
+            checkpoint_tag, experiment_directory, decoder, discriminator,
+            optimizer_dec, optimizer_disc, device,
+            classifier=classifier, optimizer_cla=optimizer_cla,
+        )
+
+        start_epoch = last_epoch + 1
+        end_epoch = last_epoch + specs["AdditionalEpochs"]
+
+        logger.info(
+            f"Continuing training from checkpoint '{checkpoint_tag}' (epoch {last_epoch}) "
+            f"for {specs['AdditionalEpochs']} additional epochs -> target epoch {end_epoch}"
+        )
+
+        prev_logs = load_previous_logs_GAN(experiment_directory)
+    # normal start point
+    else:
+        start_epoch = 1
+        end_epoch = specs["NumEpochs"]
+
+    #Determine decoder snapshot epochs (spans the whole run so past snapshots are included in the evolution plot)
+    snapshot_epochs = list(range(specs["SnapshotFrequency"], end_epoch + 1, specs["SnapshotFrequency"]))
+    snapshot_epochs += specs["AdditionalSnapshots"]
+    snapshot_epochs.sort()
+
+    #Training stat logging - seeded from history when continuing, so plots include past data
+    if prev_logs is not None:
+        loss_log_D = prev_logs["loss_log_D"]
+        loss_log_G = prev_logs["loss_log_G"]
+        lr_log_D = prev_logs["lr_log_D"]
+        lr_log_G = prev_logs["lr_log_G"]
+        disc_avg_real_log = prev_logs["disc_avg_real_log"]
+        disc_avg_fake_log = prev_logs["disc_avg_fake_log"]
+        disc_pred_accuracy_log = prev_logs["disc_pred_accuracy_log"]
+        loss_log_C = prev_logs["loss_log_C"]
+        loss_log_G_GAN = prev_logs["loss_log_G_GAN"]
+        loss_log_G_cla = prev_logs["loss_log_G_cla"]
+        lr_log_C = prev_logs["lr_log_C"]
+        RMSE_error_log_C = prev_logs["RMSE_error_log_C"]
+    else:
+        loss_log_D = []
+        loss_log_G = []
+        lr_log_D = []
+        lr_log_G = []
+        disc_avg_real_log = []
+        disc_avg_fake_log = []
+        disc_pred_accuracy_log = []
+        loss_log_C: list = []
+        loss_log_G_GAN: list = []
+        loss_log_G_cla: list = []
+        lr_log_C: list = []
+        RMSE_error_log_C: list = []
+
+
+    if not is_continuing:
+        plot_decoder_scatter(decoder, experiment_directory, start_epoch) #plot initial decoder output
+
+    epoch = 1 #get around pylance maybe unbound error
     start_train = time.time()
-    pbar = tqdm.trange(epoch, specs["NumEpochs"] + 1, desc="Training", smoothing=0)
+    pbar = tqdm.trange(start_epoch, end_epoch + 1, desc="Training", smoothing=0)
     for epoch in pbar:
         start = time.time()
 
@@ -167,18 +215,18 @@ def train_deep_sdf_gan(
 
         correct_disc_pred = 0.0
 
-        #IMPLEMENT ADJUSTABLE LEARNING RATE!!
-        lr_log_D.append(specs["InitialLearningRates"]["discriminator"])
-        lr_log_G.append(specs["InitialLearningRates"]["decoder"])
+        lr_G, lr_D, lr_C = update_lr(optimizer_dec, optimizer_disc, optimizer_dec, specs, epoch)
+
+        
+        lr_log_D.append(lr_D)
+        lr_log_G.append(lr_G)
 
         if classifier is not None:
             epoch_loss_C = 0.0
-            lr_log_C.append(specs["InitialLearningRates"]["classifier"])
+            lr_log_C.append(lr_C)
             
             
-
-
-
+        #Batch loop
         for batch in range(batch_per_epoch):
             if classifier is not None:
                 real_batch, fake_batch, latent_parameters = sampler.fetch_samples() #type: ignore
@@ -216,6 +264,7 @@ def train_deep_sdf_gan(
 
             #Train Generator
             #Eventually turn off gradient calculation for discriminator here since they are not used -> eventual performance increase
+            #Tested but no noteworthy performance increase for current setup
             for i in range(specs["LearnRatio"]):
 
                 if classifier is not None:
@@ -254,7 +303,7 @@ def train_deep_sdf_gan(
 
                 optimizer_dec.step()
 
-                epoch_loss_G += loss_G.item() #Implement logging of total and partial loss for generator!
+                epoch_loss_G += loss_G.item()
 
             #--------Logging--------
             total_real_score_D += real_scores.sum().item()
@@ -280,6 +329,8 @@ def train_deep_sdf_gan(
         pred_accuracy = 100 * correct_disc_pred / samples_per_epoch_D
         disc_pred_accuracy_log.append(pred_accuracy)
 
+        
+
         #classifier logging
         if classifier is not None:
             loss_log_C.append(epoch_loss_C)
@@ -297,14 +348,25 @@ def train_deep_sdf_gan(
         logger.info(f"Classifier Metrics: RMSE = {RMSE_error_C}")
     
         if epoch in snapshot_epochs:
-            save_snapshot(epoch, experiment_directory, decoder)
+            save_checkpoint_GAN(
+                f"SnapshotE-{epoch}", epoch, experiment_directory, decoder, discriminator,
+                optimizer_dec, optimizer_disc, classifier=classifier, optimizer_cla=optimizer_cla,
+            )
 
     #Store all Logs and create plots
     #logger class waere hier schon mal gut gewesen :/
     ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, loss_log_C, RMSE_error_log_C, lr_log_C, loss_log_G_GAN, loss_log_G_cla, epoch) # type: ignore
-    ws.save_latest(epoch, experiment_directory, decoder, "latest.pth",None, GAN = GAN_architecture)
+    save_checkpoint_GAN(
+        "latest", epoch, experiment_directory, decoder, discriminator,
+        optimizer_dec, optimizer_disc, classifier=classifier, optimizer_cla=optimizer_cla,
+    )
+
+    #Persist the epoch count so a future continue_from call knows where this run left off
+    specs["NumEpochs"] = epoch
+    ws.save_experiment_specifications(experiment_directory, specs)
+
     plot_logs(experiment_directory,show_lr = True, filename=os.path.join(experiment_directory, ws.logplot_filename), GAN = GAN_architecture, snapshot_epochs = snapshot_epochs)
     plot_decoder_evolution(experiment_directory, snapshot_epochs)
-    plot_decoder_latent_effect(experiment_directory)
+    plot_decoder_latent_effect(experiment_directory, epoch)
     plot_decoder_scatter(decoder, experiment_directory, epoch)
             

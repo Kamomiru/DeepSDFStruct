@@ -100,6 +100,16 @@ def load_experiment_specifications(experiment_directory):
         return json.load(f)
 
 
+def save_experiment_specifications(experiment_directory, specs):
+    """
+    Persist (overwrite) the experiment's specs.json. Used e.g. after continuing
+    training, to update NumEpochs to reflect the total epochs now completed.
+    """
+    filename = os.path.join(experiment_directory, specifications_filename)
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(specs, f, indent=4)
+
+
 def load_latent_vectors(experiment_directory, checkpoint, device):
 
     filename = os.path.join(
