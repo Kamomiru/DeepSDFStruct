@@ -2,7 +2,7 @@ from DeepSDFStruct.deep_sdf.training_gan import train_deep_sdf_gan
 import torch
 import os
 
-experiment_name = "gan_test_experiment24"
+experiment_name = "gan_experiment10/gan_experiment10.1"
 
 test_experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/test_experiments/" + experiment_name
 experiment_dir = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/DeepSDFStruct/trained_models/experiments/" + experiment_name
@@ -18,6 +18,6 @@ else:
 if __name__ == "__main__":
     assert(torch.cuda.is_available())
 
-    train_deep_sdf_gan(path, device="cuda")
+    train_deep_sdf_gan(path, device="cuda", continue_from= "latest")
     
         

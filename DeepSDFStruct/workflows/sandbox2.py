@@ -20,7 +20,7 @@ experiment_directory = "C:/Users/camil/Desktop/Bachelorarbeit/DeepSDFStruct/Deep
 specs = ws.load_experiment_specifications(experiment_directory)
 
 
-real_sdf = real_sdf = CrossMsSDF(0.0)
+real_sdf = CrossMsSDF(0.0)
 decoder = ws.init_decoder(specs, device, data_parallel = False).to(device) #data_paralell must be set to true if muliple compute devices are active
 
 sampler = ConvGAN_SDF_Sampler(real_sdf, decoder, 2, 2, specs["SdfParameterBounds"], device, add_latent= True)

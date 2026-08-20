@@ -1,0 +1,99 @@
+{
+    "Description": "Running full experiment with all features activated and a adaptive learning rate. First all models are being trained 50 epochs to look for good models. Then training will continiue with higher target epoch.",
+    "RunFeatures": "",
+    "NetworkArch": "deep_sdf_decoder",
+    "TrainSplit": "splits/cross.json",
+    "TestSplit": "splits/cross.json",
+    "ReconstructionSplit": "",
+    "NetworkSpecs": {
+        "dims": [
+            64,
+            64,
+            64,
+            64,
+            64,
+            64
+        ],
+        "dropout": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "dropout_prob": 0.2,
+        "norm_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "latent_in": [
+            2
+        ],
+        "xyz_in_all": false,
+        "use_tanh": false,
+        "latent_dropout": false,
+        "weight_norm": true,
+        "geom_dimension": 3
+    },
+    "WarmupSpecs": {
+        "WarmupQuality": "Light",
+        "SamplesPerIteration": 4096,
+        "LearningRate": 0.0001,
+        "LogFrequency": 100
+    },
+    "DiscriminatorSpecs": {
+        "n_nodes": 8,
+        "spectral_reg": true
+    },
+    "CodeLength": 1,
+    "NumEpochs": 50,
+    "AdditionalEpochs": 200,
+    "SnapshotFrequency": 25,
+    "AdditionalSnapshots": [],
+    "LearningRateSchedule": {
+        "Generator": {
+            "Type": "FactorStep",
+            "InitialLr": 0.01,
+            "Interval": 100,
+            "Factor": 0.5
+        },
+        "Discriminator": {
+            "Type": "FactorStep",
+            "InitialLr": 0.0001,
+            "Interval": 50,
+            "Factor": 0.9
+        },
+        "Classifier": {
+            "Type": "Constant",
+            "InitialLr": 0.0001
+        }
+    },
+    "ClassifierLossRatio": 0.3,
+    "SamplesPerBatch": 20,
+    "BatchPerEpoch": 10,
+    "LearnRatio": 10,
+    "SdfParameterBounds": [
+        0,
+        1.0
+    ],
+    "ClampDecoderOutput": true,
+    "DecoderClampValue": 1.7641,
+    "DataLoaderThreads": 1,
+    "ClampingDistance": 0.1,
+    "CodeRegularization": true,
+    "CodeRegularizationLambda": 0.0001,
+    "CodeBound": 1.0,
+    "GANArchitecture": true,
+    "UseClassifier": true,
+    "RandomMeshgridOffset": true,
+    "PretrainDecoder": true
+}

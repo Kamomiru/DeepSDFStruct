@@ -120,5 +120,5 @@ def get_highest_run_number(root_path):
     return highest
 
 if __name__ == "__main__":
-    experiment_name = "gan_experiment9"
-    start_training_cycle(experiment_name, 5)
+    experiment_name = "gan_experiment10"
+    start_training_cycle(experiment_name, 10)
