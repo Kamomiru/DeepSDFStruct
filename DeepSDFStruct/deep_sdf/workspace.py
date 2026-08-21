@@ -443,6 +443,7 @@ def save_logs_GAN(
         lr_log_R,
         loss_log_G_GAN,
         loss_log_G_reg,
+        loss_log_G_reg_base,
         epoch
 ):
 
@@ -463,6 +464,7 @@ def save_logs_GAN(
         logs["lr_log_R"] = lr_log_R
         logs["loss_G_GAN"] = loss_log_G_GAN
         logs["loss_G_reg"] = loss_log_G_reg
+        logs["loss_G_reg_base"] = loss_log_G_reg_base
 
     torch.save(
         logs,
@@ -496,6 +498,7 @@ def load_logs(experiment_directory):
                 data["lr_log_R"],
                 data["loss_G_GAN"],
                 data["loss_G_reg"],
+                data["loss_G_reg_base"],
                 data["epoch"],
             )
 

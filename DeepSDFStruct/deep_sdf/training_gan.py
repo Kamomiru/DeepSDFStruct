@@ -109,7 +109,7 @@ def train_deep_sdf_gan(
     sampler = ConvGAN_SDF_Sampler(
         real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch,
         specs["SdfParameterBounds"], device,
-        z_dim = specs["ZDim"], code_dim=code_dim,
+        latent_dim = specs["CodeLength"], code_dim=specs["ControlCodeDim"],
         z_distribution=z_distribution, code_bounds=code_bounds,
         rnd_mesh_offset=specs["RandomMeshgridOffset"],
     )
@@ -188,6 +188,7 @@ def train_deep_sdf_gan(
         disc_pred_accuracy_log = prev_logs["disc_pred_accuracy_log"]
         loss_log_G_GAN = prev_logs["loss_log_G_GAN"]
         loss_log_G_reg = prev_logs["loss_log_G_reg"]
+        loss_log_G_reg_base = prev_logs["loss_log_G_reg_base"] 
         lr_log_R = prev_logs["lr_log_R"]
         RMSE_error_log_R = prev_logs["RMSE_error_log_R"]
     else:
@@ -200,6 +201,7 @@ def train_deep_sdf_gan(
         disc_pred_accuracy_log = []
         loss_log_G_GAN: list = []
         loss_log_G_reg: list = []
+        loss_log_G_reg_base: list = []
         lr_log_R: list = []
         RMSE_error_log_R: list = []
 
@@ -218,6 +220,7 @@ def train_deep_sdf_gan(
         epoch_loss_G = 0.0
         epoch_loss_G_GAN = 0.0
         epoch_loss_G_reg = 0.0
+        epoch_loss_G_reg_base = 0.0 #loss_G_reg without lambda_relative applied. Only used for logging
 
         total_real_score_D = 0.0
         total_fake_score_D = 0.0
@@ -282,12 +285,14 @@ def train_deep_sdf_gan(
 
                     lambda_relative = calc_lambda_relative(loss_G_GAN, loss_G_reg, alpha_loss)
 
+                    loss_G_reg_base = loss_G_reg
                     loss_G_reg = loss_G_reg * lambda_relative
 
                     loss_G = loss_G_GAN + loss_G_reg
 
 
                     epoch_loss_G_reg += loss_G_reg.item()
+                    epoch_loss_G_reg_base += loss_G_reg_base.item()
                 else:
                     loss_G = loss_G_GAN
 
@@ -332,6 +337,7 @@ def train_deep_sdf_gan(
             RMSE_error_log_R.append(RMSE_error_R.item())
             loss_log_G_reg.append(epoch_loss_G_reg)
             loss_log_G_GAN.append(epoch_loss_G_GAN)
+            loss_log_G_reg_base.append(epoch_loss_G_reg_base)
             
 
 
@@ -341,7 +347,7 @@ def train_deep_sdf_gan(
         logger.info(f"Partial Generator loss is: G_GAN = {epoch_loss_G_GAN} | G_reg = {epoch_loss_G_reg} (λrel={lambda_relative})")
         logger.info(f"Avg. Discriminator predictions: real = {avg_real_pred} | fake = {avg_fake_pred} | Accuracy = {pred_accuracy}%" )
         if regressor is not None:
-            logger.info(f"Regressor Metrics: RMSE = {RMSE_error_R}")
+            logger.info(f"Regressor Metrics: RMSE = {RMSE_error_R} | Epoch Base Loss = {epoch_loss_G_reg_base} (without λrel!)")
     
         if epoch in snapshot_epochs:
             save_checkpoint_GAN(
@@ -351,7 +357,7 @@ def train_deep_sdf_gan(
 
     #Store all Logs and create plots
     #logger class waere hier schon mal gut gewesen :/
-    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, RMSE_error_log_R, lr_log_R, loss_log_G_GAN, loss_log_G_reg, epoch) # type: ignore
+    ws.save_logs_GAN(experiment_directory, loss_log_D, loss_log_G, lr_log_D, lr_log_G, disc_avg_real_log, disc_avg_fake_log, disc_pred_accuracy_log, RMSE_error_log_R, lr_log_R, loss_log_G_GAN, loss_log_G_reg, loss_log_G_reg_base, epoch)
     save_checkpoint_GAN(
         "latest", epoch, experiment_directory, decoder, discriminator,
         optimizer_dec, optimizer_disc, regressor=regressor, optimizer_reg=optimizer_reg,

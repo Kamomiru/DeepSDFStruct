@@ -33,7 +33,7 @@ class ConvGAN_SDF_Sampler():
         n_samples,
         sdf_param_bounds, # bounds for real sdf
         device,
-        z_dim,
+        latent_dim,
         code_dim,
         z_distribution="normal",
         code_bounds=(-1.0, 1.0), # bounds of latent code
@@ -52,8 +52,8 @@ class ConvGAN_SDF_Sampler():
         #TODO: Finish Edit so latent_size = code_dim + z_dim
         
         self.code_dim = code_dim
-        self.z_dim = z_dim
-        self.latent_size = self.z_dim + self.code_dim
+        self.latent_dim = latent_dim
+        self.z_dim = self.latent_dim - self.code_dim
         if self.z_dim < 0:
             raise RuntimeError(
                 f"z_dim cannot be < 0!"
@@ -103,7 +103,7 @@ class ConvGAN_SDF_Sampler():
             batch_size = int(self.n_samples / 2)
  
         z, c = self._sample_latent_batch(batch_size)
-        latent = torch.cat([z, c], dim=-1)  # (batch_size, latent_size)
+        latent = torch.cat([z, c], dim=-1)  # (batch_size, latent_dim)
  
         fake_samples = []
         for i in range(batch_size):
@@ -132,7 +132,7 @@ class ConvGAN_SDF_Sampler():
                     f"Unknown z_distribution: {self.z_distribution!r} (expected 'normal' or 'uniform')"
                 )
         else:
-            # code_dim == latent_size: no free noise dimensions at all.
+            # code_dim == latent_dim: no free noise dimensions at all.
             z = torch.empty(batch_size, 0, device=self.device)
  
         #sample latent code through uniform distribution

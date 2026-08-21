@@ -141,7 +141,7 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
         show_plt = False
 
         if ax is None:
-            if "loss_G_GAN" in logs:
+            if "loss_G_reg" in logs:
                 fig, ax = plt.subplots(
                     3,
                     2,
@@ -362,23 +362,17 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
 
 
         # --------------------
-        # Regressor Loss detail (bottom right)
+        # Regressor Loss (bottom right)
         # --------------------
-        # NOTE: this is the same loss_G_reg series already shown (combined
-        # with D/G/G_GAN) in ax[0] above -- unlike the old classifier, the
-        # regressor has no separate real-data loss to show here, since it's
-        # never trained on real data. Kept as a dedicated close-up panel
-        # since ax[0]'s shared log-scale view makes small changes in any one
-        # curve hard to read.
         if "loss_G_reg" in logs:
 
             ax[5].plot(
                 np.arange(num_iters) / iters_per_epoch,
-                logs["loss_G_reg"],
+                logs["loss_G_reg_base"],
                 color="#9b59b6",
                 alpha=0.6,
                 linewidth=1,
-                label="Regressor Loss (G component)",
+                label="Regressor Loss",
             )
 
             smoothed_loss_G_reg_detail = running_mean(logs["loss_G_reg"], 41)
@@ -393,7 +387,8 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
             ax[5].set(
                 xlabel="Epoch",
                 ylabel="Regressor Loss",
-                title="Regressor Loss (detail)"
+                title="Base Regressor Loss",
+                
             )
             ax[5].legend()
 
@@ -456,16 +451,6 @@ def to_numpy(x):
     return np.asarray(x)
 
 def _build_plot_latent(z_vec, code_val, code_dim, device):
-    """
-    Builds a full (z_dim + code_dim,) latent vector for the plotting
-    utilities below: z_vec is held fixed, and `code_val` is broadcast across
-    the code_dim positions.
-
-    NOTE: only meaningful for code_dim == 1 (a single scalar control code),
-    which is the convention this project currently uses everywhere else. For
-    code_dim > 1 this just repeats the same scalar across all code
-    positions -- fine for a quick look, but not a real per-dimension sweep.
-    """
     code_vec = torch.full((code_dim,), float(code_val), device=device)
     return torch.cat([z_vec, code_vec])
 
@@ -481,20 +466,7 @@ def plot_decoder_set(
     z_vec=None,
     device="cpu"
 ):
-    """
-    Plots one 2D cross-section slice per value in `code_vals`, sweeping the
-    InfoGAN control code c while holding the free noise z fixed (default:
-    an all-zero z, since z ~ N(0,1) -- 0 is the prior's mean/mode). With z
-    fixed, any variation you see across the panels is attributable to c
-    alone -- this is the diagnostic sweep for checking whether the decoder
-    actually learned to use c as a meaningful shape control.
 
-    `latent_size` (the decoder's total input width, i.e. specs["CodeLength"])
-    is only needed to size z when z_vec isn't passed explicitly -- this
-    function doesn't take experiment_directory, so it can't look CodeLength
-    up itself; callers with access to specs.json (plot_decoder_evolution,
-    plot_decoder_latent_effect) pass it through.
-    """
     decoder.eval()
 
     if z_vec is None:
