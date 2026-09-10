@@ -372,17 +372,17 @@ def plot_logs(experiment_directory, show_lr=False, ax=None, filename=None, GAN =
                 color="#9b59b6",
                 alpha=0.6,
                 linewidth=1,
-                label="Regressor Loss",
+                label="Base Regressor Loss",
             )
 
-            smoothed_loss_G_reg_detail = running_mean(logs["loss_G_reg"], 41)
+            smoothed_loss_G_reg_detail = running_mean(logs["loss_G_reg_base"], 41)
 
             ax[5].plot(
                 np.arange(20, num_iters - 20) / iters_per_epoch,
                 smoothed_loss_G_reg_detail,
                 color="#6c3483",
                 linewidth=2,
-                label="Regressor Loss (Mean)",
+                label="Base Regressor Loss (Mean)",
             )
             ax[5].set(
                 xlabel="Epoch",
@@ -450,8 +450,35 @@ def to_numpy(x):
         return x.detach().cpu().numpy()
     return np.asarray(x)
 
-def _build_plot_latent(z_vec, code_val, code_dim, device):
-    code_vec = torch.full((code_dim,), float(code_val), device=device)
+
+def _get_control_code_bounds(specs):
+    """
+    Read ControlCodeBounds from specs.json.
+    """
+    lo, hi = specs.get("ControlCodeBounds", [0.0, 1.0])
+    if lo >= hi:
+        raise ValueError(f"ControlCodeBounds must have min < max, got [{lo}, {hi}]")
+    return lo, hi
+
+
+def _build_plot_latent(z_vec, code_val, code_dim, device, vary_dim=0, fixed_code=None):
+    """
+    Build a latent vector from a fixed z-part plus a control-code part for all plotting purposes.
+
+    If `fixed_code` is None (default), the latent_vec is simply  [z_vec, code_val]
+
+    If `fixed_code` (!= lenght code_dim) is given, every control-code entry is
+    taken from `fixed_code` except `vary_dim`, which is set to `code_val`.
+    """
+    if fixed_code is None:
+        code_vec = torch.full((code_dim,), float(code_val), device=device)
+    else:
+        code_vec = torch.as_tensor(fixed_code, dtype=torch.float32, device=device).clone()
+        if code_vec.numel() != code_dim:
+            raise ValueError(
+                f"fixed_code has length {code_vec.numel()}, expected code_dim={code_dim}"
+            )
+        code_vec[vary_dim] = float(code_val)
     return torch.cat([z_vec, code_vec])
 
 
@@ -464,7 +491,10 @@ def plot_decoder_set(
     code_dim=1,
     latent_size=None,
     z_vec=None,
-    device="cpu"
+    device="cpu",
+    vary_dim=0,
+    fixed_code=None,
+    var_label="c",
 ):
 
     decoder.eval()
@@ -480,28 +510,114 @@ def plot_decoder_set(
     else:
         z_vec = z_vec.to(device)
 
-    latent0 = _build_plot_latent(z_vec, code_vals[0], code_dim, device)
+    latent0 = _build_plot_latent(
+        z_vec, code_vals[0], code_dim, device, vary_dim=vary_dim, fixed_code=fixed_code
+    )
     sdf = SDFfromDeepSDF(
         DeepSDFModel(decoder, latent0.unsqueeze(0), device)
     )
 
     for i, code_val in enumerate(code_vals):
-        latent = _build_plot_latent(z_vec, code_val, code_dim, device)
+        latent = _build_plot_latent(
+            z_vec, code_val, code_dim, device, vary_dim=vary_dim, fixed_code=fixed_code
+        )
         sdf.set_latent_vec(latent)
         sdf.plot_slice(origin, normal, ax=ax[i])
-        ax[i].set_title(f"c = {code_val}")
+        ax[i].set_title(f"{var_label} = {code_val:.3g}")
+
+
+def plot_decoder_latent_effect_2d(
+    decoder,
+    axes,
+    origin=(0,0,0),
+    normal=(0,1,0),
+    code_vals_0=[0.1,0.5,0.9],
+    code_vals_1=[0.1,0.5,0.9],
+    latent_size=None,
+    z_vec=None,
+    device="cpu",
+):
+    """
+    Plot a decoder over a 2D grid for a ControlCodeDim=2 control code:
+    control-code dim 0 varies down the rows of `axes`, dim 1 varies across
+    the columns. Mirrors plot_decoder_set, but for two independently
+    varying control-code dimensions instead of one.
+
+    `axes` must be indexable as axes[i, j] (e.g. the array returned by
+    plt.subplots(n, n)).
+    """
+    decoder.eval()
+    code_dim = 2
+
+    if z_vec is None:
+        if latent_size is None:
+            raise ValueError(
+                "plot_decoder_grid2d needs either z_vec or latent_size (the decoder's "
+                "total latent width, i.e. specs['CodeLength']) to size z."
+            )
+        z_dim = latent_size - code_dim
+        z_vec = torch.zeros(z_dim, device=device)
+    else:
+        z_vec = z_vec.to(device)
+
+    latent0 = torch.cat([
+        z_vec,
+        torch.tensor([code_vals_0[0], code_vals_1[0]], dtype=z_vec.dtype, device=device),
+    ])
+    sdf = SDFfromDeepSDF(
+        DeepSDFModel(decoder, latent0.unsqueeze(0), device)
+    )
+
+    for i, c0 in enumerate(code_vals_0):
+        for j, c1 in enumerate(code_vals_1):
+            code_vec = torch.tensor([c0, c1], dtype=z_vec.dtype, device=device)
+            latent = torch.cat([z_vec, code_vec])
+            sdf.set_latent_vec(latent)
+            ax = axes[i, j]
+            sdf.plot_slice(origin, normal, ax=ax)
+            ax.grid(True)
+            if i == 0:
+                ax.set_title(f"c₁ = {c1:.3g}")
+            if j == 0:
+                ax.set_ylabel(f"c₀ = {c0:.3g}")
+
 
 def plot_decoder_evolution(
     experiment_directory,
     snapshot_epochs,
     origin=(0.0, 0.0, 0.0),
     normal=(0.0, 1.0, 0.0),
-    code_vals=[0.1, 0.5, 0.9],
+    code_vals=None,
+    fixed_code_vals=None,
     device="cpu"
 ):
+    """
+    Plot decoder output across training snapshots, sweeping control-code
+    dimension 0 across `code_vals` (default: 3 values evenly spaced across
+    ControlCodeBounds). If ControlCodeDim > 1, the remaining control-code
+    dimensions are held fixed at `fixed_code_vals` (default: the mdasdsadwads specs = ws.load_experiment_specifications(experiment_directory)
+    """
     specs = ws.load_experiment_specifications(experiment_directory)
     code_dim = specs.get("ControlCodeDim", 1)
     latent_size = specs["CodeLength"]
+    lo, hi = _get_control_code_bounds(specs)
+
+    if code_vals is None:
+        code_vals = np.linspace(lo, hi, 3).tolist()
+
+    if code_dim > 1:
+        if fixed_code_vals is None:
+            mid = (lo + hi) / 2.0
+            fixed_code_vals = [mid] * code_dim
+        elif len(fixed_code_vals) != code_dim:
+            raise ValueError(
+                f"fixed_code_vals must have length code_dim={code_dim}, "
+                f"got {len(fixed_code_vals)}"
+            )
+    else:
+        fixed_code_vals = None
+
+    var_label = "c" if code_dim == 1 else "c₀"
 
     fig, ax = plt.subplots(
         len(snapshot_epochs),
@@ -513,10 +629,6 @@ def plot_decoder_evolution(
     # General title
     fig.suptitle("Decoder Evolution", fontsize=16)
 
-    # Column titles
-    for j, code_val in enumerate(code_vals):
-        ax[0, j].set_title(f"c = {code_val}")
-
     for i, snapshot in enumerate(snapshot_epochs):
         decoder = load_trained_model(
             experiment_directory,
@@ -527,7 +639,9 @@ def plot_decoder_evolution(
         # z is re-derived as zeros inside plot_decoder_set every call, so
         # it's identical across snapshot rows automatically -- any
         # differences you see row-to-row are the decoder's evolving
-        # response to c, not noise from a different z draw.
+        # response to c, not noise from a different z draw. When
+        # code_dim > 1, only dim 0 is swept; the other dims are held at
+        # fixed_code_vals for every row/snapshot.
         plot_decoder_set(
             decoder,
             ax=ax[i],
@@ -536,7 +650,10 @@ def plot_decoder_evolution(
             code_vals=code_vals,
             code_dim=code_dim,
             latent_size=latent_size,
-            device=device
+            device=device,
+            vary_dim=0,
+            fixed_code=fixed_code_vals,
+            var_label=var_label,
         )
 
         # Optional: label each row by epoch
@@ -544,44 +661,92 @@ def plot_decoder_evolution(
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for subtitle #type: ignore
     plt.savefig(str(experiment_directory) + "/DecoderTrainingPlot.png")
+    plt.close(fig)
+
 
 def plot_decoder_latent_effect(
     experiment_directory,
     epoch,
-    code_vals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-    device = torch.device("cpu")
+    code_vals=None,
+    device=torch.device("cpu")
 ):
+    """
+    Visualize how the decoder responds across the full ControlCodeBounds
+    range.
+
+    - ControlCodeDim == 1: same 3x3 (9-subplot) layout as before, sweeping
+      the single control-code dimension across `code_vals` (default: 9
+      values evenly spaced across ControlCodeBounds).
+    - ControlCodeDim == 2: a 5x5 grid where each axis is one control-code
+      dimension, both swept across `code_vals` (default: 5 values evenly
+      spaced across ControlCodeBounds; the same range is used for both
+      axes since ControlCodeBounds is a single shared [min, max] pair).
+    """
     specs = ws.load_experiment_specifications(experiment_directory)
     code_dim = specs.get("ControlCodeDim", 1)
     latent_size = specs["CodeLength"]
+    lo, hi = _get_control_code_bounds(specs)
 
     decoder = load_trained_model(experiment_directory, "latest", device)
     decoder.eval()
 
-    fig, axes = plt.subplots(
-            3, 3,
-            figsize=(12, 12),
-            squeeze=False
+    if code_dim == 1:
+        if code_vals is None:
+            code_vals = np.linspace(lo, hi, 9).tolist()
+        elif len(code_vals) != 9:
+            raise ValueError(
+                f"plot_decoder_latent_effect (ControlCodeDim=1) expects exactly 9 "
+                f"code_vals for the 3x3 grid, got {len(code_vals)}."
+            )
+
+        fig, axes = plt.subplots(3, 3, figsize=(12, 12), squeeze=False)
+        axes = axes.flatten()
+
+        plot_decoder_set(
+            decoder,
+            axes,
+            code_vals=code_vals,
+            code_dim=code_dim,
+            latent_size=latent_size,
+            device=device,
         )
 
-    axes = axes.flatten()
-    
-    plot_decoder_set(
-        decoder,
-        axes,
-        code_vals=code_vals,
-        code_dim=code_dim,
-        latent_size=latent_size,
-        device=device
-    )
+        for ax in axes:
+            ax.grid(True)
 
-    # Add control-code value as title to each subplot
-    for ax, code_val in zip(axes, code_vals):
-        ax.set_title(f"c = {code_val}")
-        ax.grid(True)
+        fig.suptitle("Decoder Latent Effect", fontsize=16)
+        plt.tight_layout()
+        plt.savefig(str(experiment_directory) + f"/LatentEffect-E{epoch}.png")
+        plt.close(fig)
 
-    plt.tight_layout()
-    plt.savefig(str(experiment_directory) + f"/LatentEffect-E{epoch}.png")
+    elif code_dim == 2:
+        if code_vals is None:
+            code_vals = np.linspace(lo, hi, 5).tolist()
+
+        n = len(code_vals)
+        fig, axes = plt.subplots(n, n, figsize=(4 * n, 4 * n), squeeze=False)
+
+        plot_decoder_latent_effect_2d(
+            decoder,
+            axes,
+            code_vals_0=code_vals,
+            code_vals_1=code_vals,
+            latent_size=latent_size,
+            device=device,
+        )
+
+        fig.suptitle("Decoder Latent Effect", fontsize=16)
+        plt.tight_layout()
+        plt.savefig(str(experiment_directory) + f"/LatentEffect-E{epoch}.png")
+        plt.close(fig)
+
+    else:
+        raise NotImplementedError(
+            f"plot_decoder_latent_effect currently supports ControlCodeDim 1 or 2, "
+            f"got {code_dim}. For higher-dimensional control codes, use "
+            f"plot_decoder_set / plot_decoder_grid2d directly on a chosen slice of "
+            f"dimensions."
+        )
 
 def plot_decoder_scatter(
     decoder,

@@ -54,7 +54,7 @@
         "n_nodes": 8,
         "spectral_reg": true
     },
-    "NumEpochs": 150,
+    "NumEpochs": 400,
     "AdditionalEpochs": 250,
     "SnapshotFrequency": 25,
     "AdditionalSnapshots": [],

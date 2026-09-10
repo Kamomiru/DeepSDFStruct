@@ -1,0 +1,99 @@
+{
+    "Description": "Testing Regressor Training outcome with higher n_nodes and higher Learn Ratio",
+    "RunFeatures": "Regressor network, with pretrain, n_nodes = 16 Added more Snapshot Epochs for better analysis",
+    "NetworkArch": "deep_sdf_decoder",
+    "TrainSplit": "splits/cross.json",
+    "TestSplit": "splits/cross.json",
+    "ReconstructionSplit": "",
+    "NetworkSpecs": {
+        "dims": [
+            64,
+            64,
+            64,
+            64,
+            64,
+            64
+        ],
+        "dropout": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "dropout_prob": 0.2,
+        "norm_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "latent_in": [
+            2
+        ],
+        "xyz_in_all": false,
+        "use_tanh": false,
+        "latent_dropout": false,
+        "weight_norm": true,
+        "geom_dimension": 3
+    },
+    "WarmupSpecs": {
+        "WarmupQuality": "Standard",
+        "SamplesPerIteration": 4096,
+        "LearningRate": 0.0001,
+        "LogFrequency": 100
+    },
+    "DiscriminatorSpecs": {
+        "n_nodes": 16,
+        "spectral_reg": true
+    },
+    "NumEpochs": 50,
+    "AdditionalEpochs": 200,
+    "SnapshotFrequency": 5,
+    "AdditionalSnapshots": [],
+    "LearningRateSchedule": {
+        "Generator": {
+            "Type": "Constant",
+            "InitialLr": 0.0005
+        },
+        "Discriminator": {
+            "Type": "Constant",
+            "InitialLr": 0.0001
+        },
+        "Regressor": {
+            "Type": "Constant",
+            "InitialLr": 0.0001
+        }
+    },
+    "RegressorLossRatio": 0.15,
+    "SamplesPerBatch": 20,
+    "BatchPerEpoch": 10,
+    "LearnRatio": 8,
+    "SdfParameterBounds": [
+        0,
+        1.0
+    ],
+    "ClampDecoderOutput": true,
+    "DecoderClampValue": 1.7641,
+    "DataLoaderThreads": 1,
+    "ClampingDistance": 0.1,
+    "CodeBound": 1.0,
+    "GANArchitecture": true,
+    "UseRegressor": true,
+    "CodeLength": 2,
+    "ControlCodeDim": 1,
+    "ZDistribution": "normal",
+    "ControlCodeBounds": [
+        -1.0,
+        1.0
+    ],
+    "RandomMeshgridOffset": true,
+    "PretrainDecoder": true
+}

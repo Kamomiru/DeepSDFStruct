@@ -21,55 +21,56 @@ data is only ever used for the discriminator's realism loss.)
 """
 
 import torch
-from DeepSDFStruct.SDF import SDFfromDeepSDF
+from DeepSDFStruct.sdf_primitives import CrossMsSDF
+from DeepSDFStruct.deep_sdf.GAN_helpers.chi3d_SDF import Chi3DPrismSDF
 
 
 class ConvGAN_SDF_Sampler():
     def __init__(
         self,
-        SDF,
         decoder,
-        n_nodes,
-        n_samples,
-        sdf_param_bounds, # bounds for real sdf
+        specs,
         device,
-        latent_dim,
-        code_dim,
-        z_distribution="normal",
-        code_bounds=(-1.0, 1.0), # bounds of latent code
-        rnd_mesh_offset=False,
     ):
-        self.n_nodes = n_nodes
-        self.n_samples = n_samples
-        self.device = device
-        self.meshgrid = self._create_meshgrid()
-        self.SDF = SDF
         self.decoder = decoder
-        self.sdf_param_bounds = sdf_param_bounds
+        self.device = device
+        self.n_nodes = specs["DiscriminatorSpecs"]["n_nodes"]
+        self.n_samples = specs["SamplesPerBatch"]
+        self.meshgrid = self._create_meshgrid()
+        self.SDFName = specs["SDFName"]
+        if self.SDFName == "CrossMsSDF":
+            self.SDF = CrossMsSDF(0.0)
+        elif self.SDFName == "Chi3DPrismSDF":
+            self.SDF = Chi3DPrismSDF(torch.ones((5,5), device=device))
+        else:
+            raise KeyError(f"The SDF Type {specs["SDFName"]} does not exist, or has not been implemented yet.")
+
+
+        self.sdf_param_bounds = specs["SdfParameterBounds"] # bounds for real sdf
 
         # latent split: latent_size is the decoder's TOTAL input width
-        # (z_dim + code_dim); code_dim is dim(c), the InfoGAN control code.
-        #TODO: Finish Edit so latent_size = code_dim + z_dim
+        # (z_dim + control_code_dim); control_code_dim is dim(c), the InfoGAN control code.
         
-        self.code_dim = code_dim
-        self.latent_dim = latent_dim
-        self.z_dim = self.latent_dim - self.code_dim
+        self.control_code_dim = specs["ControlCodeDim"]
+        self.latent_dim = specs["CodeLength"]
+        self.z_dim = self.latent_dim - self.control_code_dim
         if self.z_dim < 0:
             raise RuntimeError(
                 f"z_dim cannot be < 0!"
             )
-        if self.code_dim < 1:
+        if self.control_code_dim < 1:
                     raise RuntimeError(
-                        f"code_dim cannot be < 1!"
+                        f"control_code_dim cannot be < 1!"
                     )
-        self.z_distribution = z_distribution
-        self.code_bounds = code_bounds
+        self.z_distribution = specs["ZDistribution"]
+        self.code_bounds = specs["ControlCodeBounds"] # bounds of latent code
 
         # variables for random meshgrid offset:
-        self.rnd_mesh_offset = rnd_mesh_offset
+        self.rnd_mesh_offset = specs["RandomMeshgridOffset"]
         self.eps_max = 2 / self.n_nodes
         self.offset_meshgrid = self._get_offset_meshgrid()
 
+        self.random_params = torch.empty((len(self.sdf_param_bounds), int(self.n_samples / 2)), device=self.device)
         self._update_random_params()
 
     def resample_mesh_offset(self):
@@ -83,9 +84,18 @@ class ConvGAN_SDF_Sampler():
         (see resample_mesh_offset()).
         """
         real_samples = []
-        for param in self.random_params:
-            self.SDF.setRadius(param)
-            real_samples.append(self._sample_real_sdf_meshgrid())
+        if self.SDFName == "CrossMsSDF":
+            for param in self.random_params[0]:
+                self.SDF.setParameter(param) #type: ignore
+                real_samples.append(self._sample_real_sdf_meshgrid())
+        elif self.SDFName == "Chi3DPrismSDF":
+            for params in self.random_params.T:
+                #print(params)
+                #print(params.shape)
+                params = params.expand(5,-1)
+                self.SDF._set_param(params)
+                real_samples.append(self._sample_real_sdf_meshgrid())
+            
  
         self._update_random_params()
  
@@ -96,7 +106,7 @@ class ConvGAN_SDF_Sampler():
         Returns (fake_samples, sampled_codes), using whatever query grid is
         currently set (see resample_mesh_offset()):
           fake_samples:  (batch_size, 1, n, n, n) decoder output grids
-          sampled_codes: (batch_size, code_dim) the c drawn for each grid --
+          sampled_codes: (batch_size, control_code_dim) the c drawn for each grid --
                           this is the regressor's training target.
         """
         if batch_size is None:
@@ -132,23 +142,35 @@ class ConvGAN_SDF_Sampler():
                     f"Unknown z_distribution: {self.z_distribution!r} (expected 'normal' or 'uniform')"
                 )
         else:
-            # code_dim == latent_dim: no free noise dimensions at all.
+            # control_code_dim == latent_dim: no free noise dimensions at all.
             z = torch.empty(batch_size, 0, device=self.device)
  
         #sample latent code through uniform distribution
-        c = self.code_bounds[0] + (self.code_bounds[1] - self.code_bounds[0]) * torch.rand(batch_size, self.code_dim, device=self.device)
+        c = self.code_bounds[0] + (self.code_bounds[1] - self.code_bounds[0]) * torch.rand(batch_size, self.control_code_dim, device=self.device)
  
         return z, c
  
     def _update_random_params(self):
         """
-        Update random parameters for real sdf sampling
+        Update random parameters for real sdf sampling using uniform distribution
         """
-        # random radii for the *real* CrossMsSDF batch only -- independent
-        # of whatever (z, c) gets drawn for the fake batch.
-        self.random_params = self.sdf_param_bounds[0] + (
-            self.sdf_param_bounds[1] - self.sdf_param_bounds[0]
-        ) * torch.rand(1, int(self.n_samples / 2), device=self.device).squeeze(0).detach()
+        for i, bounds in enumerate(self.sdf_param_bounds):
+
+            if  len(bounds) == 1:
+                 self.random_params[i] = torch.full((1, int(self.n_samples / 2)), bounds[0])
+            elif len(bounds) == 2:
+                max_b = max(bounds)
+                min_b = min(bounds)
+                self.random_params[i] = min_b + (
+                            max_b - min_b
+                        ) * torch.rand((1, int(self.n_samples / 2)), device=self.device).squeeze(0).detach()
+            else:
+                raise ValueError(f"Dimension of bounds must be 1 for constant parameter or 2 for randomly sampled parameter! Got bounds of dim: {len(bounds)}")
+
+        #print(f"random params: {self.random_params}")
+        #print(f"random params shape: {self.random_params.shape}")
+
+        return self.random_params
  
     def _create_meshgrid(self):
         line = torch.linspace(-1.0, 1.0, self.n_nodes, device=self.device)

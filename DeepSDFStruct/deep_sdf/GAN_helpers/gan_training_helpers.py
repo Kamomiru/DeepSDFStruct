@@ -2,6 +2,7 @@ import torch
 import logging
 import tqdm
 import time
+import os
  
 import DeepSDFStruct
 import DeepSDFStruct.deep_sdf.workspace as ws
@@ -207,43 +208,37 @@ def load_checkpoint_GAN(
  
 def load_previous_logs_GAN(experiment_directory):
     """
-    Load previously saved GAN logs (Logs.pth) into a dict of plain lists, so
-    a continued run can extend them and later plots show the full history.
-    Regressor-related logs default to empty lists if the previous run didn't
-    use a regressor.
+    Load previously saved GAN logs (Logs.pth) into a dict of plain lists,
+    so a continued run can extend them and later plots show the full history.
 
-    NOTE: logs from an old classifier-based run (with a "loss_C" key) will
-    fall through to the plain-GAN branch here -- their classifier data isn't
-    carried over. This is expected: since CodeLength changes for the
-    InfoGAN-style setup, an old classifier-run's decoder checkpoint isn't
-    loadable into the new architecture anyway (shape mismatch on the first
-    layer), so continuing training from such a run isn't meaningful regardless.
+    Regressor-related logs default to empty lists if the previous run
+    didn't use a regressor.
     """
-    logs = ws.load_logs(experiment_directory)
- 
-    if len(logs) == 12:
-        (
-            loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy,
-            rmse_R, lr_R, loss_G_GAN, loss_G_reg, _epoch,
-        ) = logs
-    else:
-        (loss_D, loss_G, lr_D, lr_G, avg_real, avg_fake, accuracy, _epoch) = logs
-        rmse_R, lr_R, loss_G_GAN, loss_G_reg = [], [], [], []
- 
-    return {
-        "loss_log_D": loss_D,
-        "loss_log_G": loss_G,
-        "lr_log_D": lr_D,
-        "lr_log_G": lr_G,
-        "disc_avg_real_log": avg_real,
-        "disc_avg_fake_log": avg_fake,
-        "disc_pred_accuracy_log": accuracy,
-        "RMSE_error_log_R": rmse_R,
-        "lr_log_R": lr_R,
-        "loss_log_G_GAN": loss_G_GAN,
-        "loss_log_G_reg": loss_G_reg,
-    }
 
+    logs = torch.load(
+        os.path.join(experiment_directory, "logs.pth"),
+        weights_only=False
+    )
+
+    return {
+        "loss_log_D": logs.get("loss_D", []),
+        "loss_log_G": logs.get("loss_G", []),
+        "lr_log_D": logs.get("lr_log_D", []),
+        "lr_log_G": logs.get("lr_log_G", []),
+        "disc_avg_real_log": logs.get("avg_real_pred", []),
+        "disc_avg_fake_log": logs.get("avg_fake_pred", []),
+        "disc_pred_accuracy_log": logs.get("pred_accuracy", []),
+
+        # Regressor-related logs
+        "RMSE_error_log_R": logs.get("RMSE_error_log_R", []),
+        "lr_log_R": logs.get("lr_log_R", []),
+        "loss_log_G_GAN": logs.get("loss_G_GAN", []),
+        "loss_log_G_reg": logs.get("loss_G_reg", []),
+        "loss_log_G_reg_base": logs.get("loss_G_reg_base", []),
+
+        # Useful if you need the previous epoch
+        "epoch": logs.get("epoch", 0),
+    }
 def get_lr_single(schedule, epoch):
     schedule_type = schedule["Type"]
     lr = 0.0

@@ -96,24 +96,9 @@ def train_deep_sdf_gan(
     if samples_per_epoch_D % 2 != 0:
             raise RuntimeError("samples_per_batch * batch_per_epoch must be divisible by 2 to ensure equal amounts of real and fake inputs for discriminator!")
 
-    #Data Generation/Sampling
-    real_sdf = CrossMsSDF(0.0)
-
-    # InfoGAN-style latent split: CodeLength is the decoder's TOTAL latent
-    # width (z_dim + code_dim); ControlCodeDim is dim(c). z_dim is derived
-    # inside the sampler as CodeLength - ControlCodeDim.
     code_dim = specs.get("ControlCodeDim", 1)
-    z_distribution = specs.get("ZDistribution", "normal")               # "normal" or "uniform"
-    code_bounds = tuple(specs.get("ControlCodeBounds", [-1.0, 1.0]))
 
-    sampler = ConvGAN_SDF_Sampler(
-        real_sdf, decoder, specs["DiscriminatorSpecs"]["n_nodes"], samples_per_batch,
-        specs["SdfParameterBounds"], device,
-        latent_dim = specs["CodeLength"], code_dim=specs["ControlCodeDim"],
-        z_distribution=z_distribution, code_bounds=code_bounds,
-        rnd_mesh_offset=specs["RandomMeshgridOffset"],
-    )
-
+    sampler = ConvGAN_SDF_Sampler(decoder, specs, device)
 
     #OPTIONAL: initialize regressor
     #type annotation so pylance does'nt constantly throw errors. Would work without this!
@@ -276,7 +261,7 @@ def train_deep_sdf_gan(
 
                 #additional regressor loss
                 if regressor is not None:
-                    optimizer_reg.zero_grad()
+                    optimizer_reg.zero_grad() #type: ignore
                     
                     pred_codes = regressor(fake_batch).view(-1, code_dim) #view() guards against ConvClassifier's inherited squeeze(-1) collapsing the code_dim==1 case to a 1-D tensor
 
@@ -302,7 +287,7 @@ def train_deep_sdf_gan(
 
                 optimizer_dec.step()
                 if regressor is not None:
-                    optimizer_reg.step()
+                    optimizer_reg.step() #type: ignore
 
                 epoch_loss_G += loss_G.item()
 
